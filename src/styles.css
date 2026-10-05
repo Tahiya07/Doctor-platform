@@ -644,17 +644,18 @@ td { padding: 11px 13px; color: var(--color-text-secondary); border-top: 1px sol
 .main-column { margin-left: 0; }
 .topbar .mobile-menu { display: grid; flex: none; place-items: center; width: 36px; height: 36px; color: var(--color-text-secondary); border-radius: 50%; transition: color .18s,transform .18s; }
 .topbar .mobile-menu:hover { color: var(--color-brand-primary); transform: translateY(-1px); }
+.topbar > .mobile-menu { display: none; }
 .mobile-drawer-backdrop { justify-content: flex-start; align-items: stretch; padding: 12px; background: rgba(6,42,101,.2); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
 .mobile-drawer { width: min(380px,calc(100vw - 24px)); height: calc(100dvh - 24px); max-height: none; border-radius: 28px; animation: drawer-side-in .28s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes drawer-side-in { from { opacity: .55; transform: translateX(-18px); } to { opacity: 1; transform: translateX(0); } }
-@media (max-width: 900px) { .topbar .mobile-menu { width: 33px; height: 33px; } .mobile-drawer-backdrop { justify-content: center; padding: 12px; } .mobile-drawer { width: min(100%,420px); height: 100%; border-radius: 30px; animation: drawer-in .25s cubic-bezier(.2,.8,.2,1) both; } }
+@media (max-width: 900px) { .topbar .mobile-menu { width: 33px; height: 33px; } .mobile-drawer-backdrop { justify-content: center; padding: 12px; } .mobile-drawer { width: min(100%,420px); height: 100%; border-radius: 30px; animation: drawer-in .25s cubic-bezier(.2,.8,.2,1) both; backdrop-filter: blur(32px) saturate(130%); -webkit-backdrop-filter: blur(32px) saturate(130%); } }
 @media (max-width: 390px) { .brand-crumb strong { max-width: 72px; } .topbar-brand small { display: none; } .topbar-brand { gap: 7px; } .topbar-brand-home { gap: 6px; } }
-.desktop-menu-button { display: none; }
+.desktop-menu-button { display: grid; flex: none; place-items: center; width: 34px; height: 34px; padding: 0; color: var(--color-text-secondary); border-radius: 50%; }
 @keyframes drawer-side-in-right { from { opacity: .55; transform: translateX(18px); } to { opacity: 1; transform: translateX(0); } }
 @media (min-width: 901px) {
-  .topbar > .mobile-menu { display: none; }
   .desktop-menu-button { display: grid; flex: none; place-items: center; width: 34px; height: 34px; padding: 0; color: var(--color-text-secondary); border-radius: 50%; }
   .desktop-menu-button:hover { color: var(--color-brand-primary); transform: translateY(-1px); }
   .mobile-drawer-backdrop { justify-content: flex-end; }
   .mobile-drawer { animation-name: drawer-side-in-right; backdrop-filter: blur(32px) saturate(130%); -webkit-backdrop-filter: blur(32px) saturate(130%); }
 }
+@media (max-width: 900px) { .desktop-menu-button { width: 30px; height: 30px; } }
