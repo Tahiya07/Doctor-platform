@@ -659,3 +659,24 @@ td { padding: 11px 13px; color: var(--color-text-secondary); border-top: 1px sol
   .mobile-drawer { animation-name: drawer-side-in-right; backdrop-filter: blur(32px) saturate(130%); -webkit-backdrop-filter: blur(32px) saturate(130%); }
 }
 @media (max-width: 900px) { .desktop-menu-button { width: 30px; height: 30px; } }
+
+/* Payno-style background blur for the navbar command pill and mobile drawer only. */
+.command-pill {
+  background: rgba(255,255,255,.34);
+  backdrop-filter: blur(16px) saturate(125%);
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
+  box-shadow: none;
+}
+.mobile-drawer {
+  background: rgba(255,255,255,.35);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+.mobile-drawer::before { display: none; }
+:root[data-theme="dark"] .command-pill {
+  background: rgba(13,43,76,.58);
+  box-shadow: none;
+}
+:root[data-theme="dark"] .mobile-drawer {
+  background: rgba(13,43,76,.58);
+}
