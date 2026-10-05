@@ -1,6 +1,6 @@
-# Carewell frontend
+# Carewell 
 
-A frontend-only, MERN-compatible healthcare discovery and care coordination prototype. The current data source is an async-shaped in-memory mock service; no API server, persistence, authentication, messaging transport, file storage, or payment processing is included.
+A healthcare discovery and care coordination prototype. The current data source is an async-shaped in-memory mock service; no API server, persistence, authentication, messaging transport, file storage, or payment processing is included.
 
 ## Run locally
 
