@@ -116,7 +116,7 @@ describe("deactivation requests", () => {
 
     fails(await doctor.client.get("/auth/me"), 401, "UNAUTHENTICATED");
     fails(
-      await ctx.client().post("/auth/login", { email: doctor.email, password: "pass-word-123" }),
+      await ctx.client().post("/auth/login", { email: doctor.email, password: "Pass-word-123!" }),
       403,
       "ACCOUNT_RESTRICTED",
     );

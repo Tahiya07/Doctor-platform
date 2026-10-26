@@ -15,6 +15,7 @@ import { issueVerificationCode } from "../services/emailCodes.js";
 import { discardUpload } from "../services/files.js";
 import { LINKS, notifyAdmins } from "../services/notifications.js";
 import { ApiError, conflict, notFound, parse, uuid } from "../utils/errors.js";
+import { strongPassword } from "../utils/password.js";
 
 /**
  * How a doctor joins and leaves: self-registration, uploading certificates for the administrator
@@ -33,10 +34,7 @@ const registerSchema = z.object({
     .string()
     .trim()
     .regex(/^\+?[0-9\s-]{8,18}$/, "Enter a valid phone number."),
-  password: z
-    .string()
-    .min(8, "Use at least 8 characters.")
-    .refine((value) => Buffer.byteLength(value) <= 72, "Use at most 72 characters."),
+  password: strongPassword,
   specialtyId: z.string().min(1, "Choose a specialty."),
   qualifications: z.array(z.string().trim().min(1)).min(1, "Add at least one qualification."),
   experienceYears: z.number().int("Use whole years.").min(0).max(60),
@@ -78,6 +76,7 @@ export const registerDoctor = async (request, response) => {
       phone: data.phone,
       passwordHash: await hashPassword(data.password),
       role: "doctor",
+      language: request.language ?? "en",
       doctor: {
         create: {
           specialtyId: data.specialtyId,

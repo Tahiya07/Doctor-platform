@@ -1,5 +1,6 @@
 import { EXTRA } from "./bn.extra.js";
 import { NAMES } from "./bn.names.js";
+import { HOME } from "./bn.home.js";
 import { SERVER } from "./bn.server.js";
 
 // Bengali for the interface text. Keys are the English text exactly as shown (extra spaces ignored).
@@ -197,4 +198,4 @@ const LEGACY = {
     "হার্ট বোতামে চাপ দিয়ে ডাক্তার সংরক্ষণ করুন; তারা এখানে দেখা যাবে।",
 };
 
-export const BN = { ...LEGACY, ...EXTRA, ...SERVER, ...NAMES };
+export const BN = { ...HOME, ...LEGACY, ...EXTRA, ...SERVER, ...NAMES }; // HOME first: the other files win when a text is in two of them

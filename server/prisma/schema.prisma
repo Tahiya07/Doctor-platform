@@ -117,23 +117,29 @@ enum CertificateKind {
 // ── Identity ───────────────────────────────────────────────────────────────────────────
 
 model User {
-  id              String        @id @default(uuid()) @db.Uuid
+  id               String        @id @default(uuid()) @db.Uuid
   /// Full display name (the UI has one "Full name" field).
-  name            String
+  name             String
   /// Store lower-cased; the service layer normalises before every lookup.
-  email           String        @unique
-  phone           String?
-  passwordHash    String        @map("password_hash")
-  role            Role          @default(patient)
-  accountStatus   AccountStatus @default(active) @map("account_status")
+  email            String        @unique
+  phone            String?
+  passwordHash     String        @map("password_hash")
+  role             Role          @default(patient)
+  accountStatus    AccountStatus @default(active) @map("account_status")
   /// Null until the emailed code is confirmed. API field `emailVerified` = (value !== null).
-  emailVerifiedAt DateTime?     @map("email_verified_at") @db.Timestamptz(3)
+  emailVerifiedAt  DateTime?     @map("email_verified_at") @db.Timestamptz(3)
   /// Object-storage key of the profile photo (null = none). Served by GET /photos/users/:id.
-  photoKey        String?       @map("photo_key")
-  photoUpdatedAt  DateTime?     @map("photo_updated_at") @db.Timestamptz(3)
-  lastSeenAt      DateTime?     @map("last_seen_at") @db.Timestamptz(3)
-  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  photoKey         String?       @map("photo_key")
+  photoUpdatedAt   DateTime?     @map("photo_updated_at") @db.Timestamptz(3)
+  lastSeenAt       DateTime?     @map("last_seen_at") @db.Timestamptz(3)
+  /// "en" or "bn": the language of the emails this person receives (set from the website's language button; CHECK in the migration).
+  language         String        @default("en")
+  /// Wrong passwords in a row. Only administrator accounts are locked by it (see controllers/auth.js).
+  failedLoginCount Int           @default(0) @map("failed_login_count")
+  /// While in the future, sign-in is refused even with the right password.
+  lockedUntil      DateTime?     @map("locked_until") @db.Timestamptz(3)
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   doctor               Doctor?
   appointments         Appointment[]         @relation("PatientAppointments")

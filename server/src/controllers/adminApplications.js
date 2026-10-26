@@ -108,7 +108,8 @@ async function decide(request, doctor, { status, data, decision, decisionNote, t
     name: doctor.user.name,
     decision,
     note: decisionNote,
-    reapplyDate: reapplyDate && formatDay(reapplyDate),
+    reapplyDate: reapplyDate && formatDay(reapplyDate, doctor.user.language),
+    language: doctor.user.language,
     link: appLink(link),
   });
 }

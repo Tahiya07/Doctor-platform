@@ -82,13 +82,31 @@ remembered in the browser. In Bengali mode:
   `3:00 PM` → `বিকাল ৩:০০`), or a sentence pattern with a name or count in it (`14 years experience`). Names, emails and
   anything with no Bengali entry stay as written. The dictionary files hold the words: `bn.js` (earlier screens),
   `bn.extra.js` (the rest of the interface) and `bn.server.js` (messages the API sends).
-- **Font:** Hind Siliguri (`@fontsource/hind-siliguri`, bundled, no Google request). `<html lang>` and `data-language`
+- **Font:** Noto Sans Bengali (`@fontsource/noto-sans-bengali`, bundled, no Google request). `<html lang>` and `data-language`
   follow the choice, and negative letter-spacing is switched off because it breaks Bengali letters.
 - **Text people wrote** (chat messages, review comments, support messages) carries `translate="no"` and is never changed.
 
 **Adding a new screen:** write the English as usual. If a new sentence is missing in Bengali, add it to `bn.extra.js`
 (keys are the English text exactly as shown). Sentences with a name or number go in the pattern list in `translate.js`.
 `i18n/translate.test.js` shows the expected results.
+
+**Emails.** The server writes each email in the recipient's language (`users.language`, `"en"` or `"bn"`). The website sends
+its language with every request (`X-Language`) and `middleware/authenticate.js` keeps the signed-in user's value up to date,
+so the next email follows the button. All wording is in `server/src/services/mailCopy.js`, once per language; change a
+sentence in both. An invited doctor, whose language is not known yet, gets one email with both languages. Appointment emails
+(`services/appointmentMail.js`) never contain the reason for the visit. SMS is not built yet: it needs a gateway account.
+
+## Passwords and sign-in security
+
+- **New passwords** (sign-up, reset, change, doctor invitation) need 10+ characters with a lowercase letter, a capital, a
+  number and a symbol, and no obvious words. The rule is in `server/src/utils/password.js` and `client/src/utils/password.js`
+  (keep them equal); signing in never applies it, so older accounts keep working.
+- **Show password:** `components/ui/PasswordInput.jsx` adds the eye and, with `rules`, a live checklist. The administrator
+  sign-in turns the eye off (`reveal={false}`).
+- **Administrator lock:** 4 wrong passwords lock an administrator account for 30 minutes (`users.failed_login_count`,
+  `locked_until`; `423 ACCOUNT_LOCKED`), even from the other sign-in pages. The administrator sign-in answers the same for
+  emails that are not administrators, so it cannot be used to find them. The owner is emailed, and a password reset by email
+  unlocks the account. Other roles keep the general limit (10 tries per 15 minutes).
 
 ## Data flow
 
@@ -122,8 +140,8 @@ request ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)).
 
 ## Known limitations and placeholders
 
-- Several visuals are static placeholders pending real data: hero/testimonial stats and photos (in
-  `components/discovery/`), the clinics "Map" toggle.
+- The clinics "Map" toggle is a placeholder. The home page (`pages/public/DiscoverPage.jsx`, sections in `components/discovery/`,
+  styles in `styles/home.css`) uses live counts from the API; its wording is static.
 - Images are hot-linked from Unsplash; host them in `client/public/images` before launch.
 - No i18n, no analytics, no error-reporting hook beyond `ErrorBoundary.componentDidCatch`.
 - JavaScript with JSDoc; migrating to TypeScript would be a natural next step (`types.js` is the seed).

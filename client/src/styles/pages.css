@@ -1,5 +1,5 @@
 /* ═══ discovery ═══ */
-/* Doctor cards, home hero, search panel, trust strip, banner, quote. */
+/* Doctor cards, search panel, banner, quote. (The home page banner and sections are in home.css.) */
 .doctor-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -20,7 +20,8 @@
 }
 .doctor-photo {
   position: relative;
-  height: 165px;
+  /* 3:2 shows the whole head and the shoulders of a portrait; a wide strip cut heads or bodies off. */
+  aspect-ratio: 3 / 2;
   overflow: hidden;
   background: var(--color-bg-tertiary);
 }
@@ -28,7 +29,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 26%;
+  object-position: center 24%;
   transition: transform 0.45s;
 }
 .doctor-card:hover .doctor-photo > img {
@@ -172,98 +173,6 @@
   padding: 0 9px;
   font-size: 13px;
 }
-.hero {
-  display: grid;
-  grid-template-columns: 0.92fr 1.08fr;
-  align-items: center;
-  gap: clamp(32px, 6vw, 82px);
-  min-height: 440px;
-  padding: 14px 0 36px;
-}
-.hero-copy {
-  padding-left: 2px;
-}
-.hero-copy > .eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 15px;
-}
-.hero-copy > .eyebrow i {
-  width: 7px;
-  height: 7px;
-  background: var(--color-brand-secondary);
-  border-radius: 50%;
-  box-shadow: 0 0 0 4px var(--color-verified-bg);
-}
-.hero h1 {
-  margin: 0 0 16px;
-  font-size: clamp(40px, 5.3vw, 66px);
-  line-height: 1.07;
-  letter-spacing: -3.6px;
-  font-weight: 700;
-}
-.hero-copy > p {
-  max-width: 390px;
-  margin-bottom: 20px;
-  color: var(--color-text-tertiary);
-  font-size: 16px;
-  line-height: 1.85;
-}
-.hero-visual {
-  --hero-image-height: 500px;
-}
-.hero-image-wrap {
-  position: relative;
-  /* The photo is a 4:5 portrait, shown whole (head to waist) instead of cropped to a wide strip. */
-  height: var(--hero-image-height);
-  aspect-ratio: 4 / 5;
-  margin: 0 auto;
-  overflow: visible;
-}
-.hero-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 50% 20%;
-  border-radius: 47% 47% 10px 10px;
-  box-shadow: var(--shadow-md);
-}
-.hero-image-overlay {
-  position: absolute;
-  inset: 0;
-  border-radius: 47% 47% 10px 10px;
-  background: linear-gradient(180deg, rgba(11, 31, 51, 0.02) 47%, rgba(11, 31, 51, 0.28));
-  pointer-events: none;
-}
-.image-stamp {
-  position: absolute;
-  left: 16px;
-  bottom: 14px;
-  color: #fff;
-  font-size: 12px;
-  letter-spacing: 1px;
-}
-.hero-caption {
-  display: flex;
-  justify-content: space-between;
-  width: calc(var(--hero-image-height) * 0.8);
-  max-width: 100%;
-  margin: 10px auto 0;
-  color: var(--color-text-muted);
-  font-size: 12px;
-  letter-spacing: 0.8px;
-}
-.hero-caption span:first-child {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.hero-caption i {
-  width: 19px;
-  height: 1px;
-  background: var(--color-brand-secondary);
-}
 .search-section {
   position: relative;
   z-index: 2;
@@ -391,62 +300,6 @@
 .quick-search button:hover {
   color: var(--color-interactive-primary);
   border-color: var(--color-interactive-primary);
-}
-.trust-strip {
-  display: grid;
-  grid-template-columns: 1.35fr 0.8fr 0.8fr 0.8fr 1fr;
-  align-items: center;
-  gap: 18px;
-  margin: 40px 0 48px;
-  padding: 22px 24px;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 12px;
-  background: var(--gradient-ambient);
-}
-.trust-strip .eyebrow {
-  font-size: 10px;
-  letter-spacing: 0.12em;
-}
-.trust-headline {
-  display: block;
-  margin-top: 5px;
-  font: 700 22px/1.25 var(--font-display);
-  letter-spacing: -0.65px;
-}
-.trust-headline em {
-  color: var(--color-brand-secondary);
-  font-style: normal;
-}
-.trust-stat {
-  display: grid;
-  padding-left: 15px;
-  border-left: 1px solid var(--color-border-default);
-}
-.trust-stat strong {
-  font: 700 20px/1.25 var(--font-display);
-  letter-spacing: -0.45px;
-}
-.trust-stat strong span {
-  color: var(--color-brand-secondary);
-  font-size: 14px;
-}
-.trust-stat small {
-  color: var(--color-text-tertiary);
-  font-size: 13px;
-  line-height: 1.45;
-}
-.trust-note {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-left: 13px;
-  color: var(--color-brand-secondary);
-  border-left: 1px solid var(--color-border-default);
-}
-.trust-note span {
-  color: var(--color-text-secondary);
-  font-size: 12px;
-  line-height: 1.6;
 }
 .featured-section {
   margin: 0 0 43px;

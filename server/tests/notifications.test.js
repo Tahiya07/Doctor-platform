@@ -244,7 +244,7 @@ describe("doctor onboarding", () => {
     name: "Dr. Notify Me",
     email,
     phone: "+880 1711 000000",
-    password: "doctor-pass-123",
+    password: "Doctor-pass-123!",
     specialtyId: "cardiology",
     qualifications: ["MBBS"],
     experienceYears: 3,
@@ -259,7 +259,10 @@ describe("doctor onboarding", () => {
     ok(await upload(ctx, client, "/doctor/certificates", { name: "bmdc.pdf", kind: "bmdc" }), 201);
     assert.equal(await find(admins[0], "New doctor application"), undefined);
 
-    const code = [...ctx.outbox].reverse().find((mail) => mail.to === "notify.me@test.local").subject.slice(0, 6);
+    const code = [...ctx.outbox]
+      .reverse()
+      .find((mail) => mail.to === "notify.me@test.local")
+      .subject.slice(0, 6);
     ok(await client.post("/auth/verify-email", { code }));
     ok(await client.post("/doctor/application/submit"));
     for (const admin of admins)
@@ -404,7 +407,7 @@ describe("support and accounts", () => {
         name: "New Patient",
         email,
         phone: "+880 1711 000000",
-        password: "correct-horse-1",
+        password: "Correct-horse-1!",
       }),
       201,
     );
@@ -417,8 +420,8 @@ describe("support and accounts", () => {
     assert.ok(await find(patient, "Email verified"));
     ok(
       await client.post("/auth/change-password", {
-        currentPassword: "correct-horse-1",
-        newPassword: "another-pass-123",
+        currentPassword: "Correct-horse-1!",
+        newPassword: "Another-pass-1!23",
       }),
     );
     assert.ok(await find(patient, "Your password was changed"));

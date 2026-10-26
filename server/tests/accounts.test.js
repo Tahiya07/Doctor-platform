@@ -28,7 +28,7 @@ const account = (extra = {}) => ({
   name: "Nadia Rahman",
   email: `patient${++counter}@test.local`,
   phone: "+880 1711 000000",
-  password: "correct-horse-1",
+  password: "Correct-horse-1!",
   ...extra,
 });
 const lastMail = (to) => [...ctx.outbox].reverse().find((mail) => mail.to === to);
@@ -182,7 +182,7 @@ describe("forgot and reset password", () => {
 
     const token = tokenFrom(mail);
     assert.deepEqual(
-      ok(await ctx.client().post("/auth/reset-password", { token, password: "brand-new-pass-9" })),
+      ok(await ctx.client().post("/auth/reset-password", { token, password: "Brand-new-pass-9!" })),
       { reset: true },
     );
 
@@ -191,7 +191,7 @@ describe("forgot and reset password", () => {
       401,
       "INVALID_CREDENTIALS",
     );
-    ok(await ctx.client().post("/auth/login", { email: details.email, password: "brand-new-pass-9" }));
+    ok(await ctx.client().post("/auth/login", { email: details.email, password: "Brand-new-pass-9!" }));
   });
 
   it("answers the same for an unknown email and sends nothing", async () => {
@@ -213,13 +213,13 @@ describe("forgot and reset password", () => {
     const newer = tokenFrom(lastMail(details.email));
 
     fails(
-      await ctx.client().post("/auth/reset-password", { token: older, password: "another-pass-77" }),
+      await ctx.client().post("/auth/reset-password", { token: older, password: "Another-pass-77!" }),
       410,
       "RESET_TOKEN_INVALID",
     );
-    ok(await ctx.client().post("/auth/reset-password", { token: newer, password: "another-pass-77" }));
+    ok(await ctx.client().post("/auth/reset-password", { token: newer, password: "Another-pass-77!" }));
     fails(
-      await ctx.client().post("/auth/reset-password", { token: newer, password: "another-pass-88" }),
+      await ctx.client().post("/auth/reset-password", { token: newer, password: "Another-pass-88!" }),
       410,
       "RESET_TOKEN_INVALID",
     );
@@ -232,7 +232,7 @@ describe("forgot and reset password", () => {
     const token = tokenFrom(lastMail(details.email));
 
     fails(
-      await ctx.client().post("/auth/reset-password", { token: "made-up", password: "another-pass-77" }),
+      await ctx.client().post("/auth/reset-password", { token: "made-up", password: "Another-pass-77!" }),
       410,
       "RESET_TOKEN_INVALID",
     );
@@ -244,7 +244,7 @@ describe("forgot and reset password", () => {
 
     await ctx.prisma.passwordReset.updateMany({ data: { expiresAt: new Date(Date.now() - 1000) } });
     fails(
-      await ctx.client().post("/auth/reset-password", { token, password: "another-pass-77" }),
+      await ctx.client().post("/auth/reset-password", { token, password: "Another-pass-77!" }),
       410,
       "RESET_TOKEN_INVALID",
     );
@@ -259,13 +259,13 @@ describe("forgot and reset password", () => {
     ok(
       await login.post("/auth/reset-password", {
         token: tokenFrom(lastMail(details.email)),
-        password: "another-pass-77",
+        password: "Another-pass-77!",
       }),
     );
 
     fails(await client.get("/auth/me"), 401, "UNAUTHENTICATED");
     const { user } = ok(
-      await ctx.client().post("/auth/login", { email: details.email, password: "another-pass-77" }),
+      await ctx.client().post("/auth/login", { email: details.email, password: "Another-pass-77!" }),
     );
     assert.equal(user.emailVerified, true);
   });
@@ -293,9 +293,12 @@ describe("forgot and reset password", () => {
     ok(
       await ctx
         .client()
-        .post("/auth/reset-password", { token: tokenFrom(lastMail(email)), password: "doctor-first-pass-1" }),
+        .post("/auth/reset-password", {
+          token: tokenFrom(lastMail(email)),
+          password: "Doctor-first-pass-1!",
+        }),
     );
-    ok(await ctx.client().post("/auth/login", { email, password: "doctor-first-pass-1", portal: "doctor" }));
+    ok(await ctx.client().post("/auth/login", { email, password: "Doctor-first-pass-1!", portal: "doctor" }));
   });
 });
 
@@ -336,7 +339,7 @@ describe("profile and password change", () => {
     fails(
       await client.post("/auth/change-password", {
         currentPassword: "wrong-one-123",
-        newPassword: "fresh-pass-4567",
+        newPassword: "Fresh-pass-4567!",
       }),
       422,
       "VALIDATION_FAILED",
@@ -352,13 +355,13 @@ describe("profile and password change", () => {
     ok(
       await client.post("/auth/change-password", {
         currentPassword: details.password,
-        newPassword: "fresh-pass-4567",
+        newPassword: "Fresh-pass-4567!",
       }),
     );
 
     ok(await client.get("/auth/me")); // this device stays signed in
     fails(await otherDevice.get("/auth/me"), 401, "UNAUTHENTICATED"); // the other one does not
-    ok(await ctx.client().post("/auth/login", { email: details.email, password: "fresh-pass-4567" }));
+    ok(await ctx.client().post("/auth/login", { email: details.email, password: "Fresh-pass-4567!" }));
     fails(
       await ctx.client().post("/auth/login", { email: details.email, password: details.password }),
       401,

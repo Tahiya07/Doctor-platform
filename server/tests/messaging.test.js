@@ -142,7 +142,7 @@ describe("who can talk to whom", () => {
       name: "Dr. Self Registered",
       email: "self.reg@test.local",
       phone: "+880 1711 000000",
-      password: "doctor-pass-123",
+      password: "Doctor-pass-123!",
       specialtyId: "cardiology",
       qualifications: ["MBBS"],
       experienceYears: 2,

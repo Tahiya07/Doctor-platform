@@ -4,7 +4,7 @@ import { startTestApp } from "./helpers.js";
 
 let ctx;
 let admin; // a signed-in administrator
-const ADMIN = { email: "admin@test.local", password: "pass-word-123" }; // createUser() gives everyone this password
+const ADMIN = { email: "admin@test.local", password: "Pass-word-123!" }; // createUser() gives everyone this password
 const day = (offset) => ctx.addDays(ctx.dhakaNow().date, offset);
 
 const ok = (response, status = 200) => {
@@ -31,7 +31,7 @@ async function createUser(role, email, extra = {}) {
     data: {
       name: `${role} ${email}`,
       email,
-      passwordHash: await ctx.hashPassword("pass-word-123"),
+      passwordHash: await ctx.hashPassword("Pass-word-123!"),
       role,
       emailVerifiedAt: new Date(),
       ...extra,
@@ -95,7 +95,7 @@ describe("authentication", () => {
     ok(
       await patient.post("/auth/login", {
         email: "patient@test.local",
-        password: "pass-word-123",
+        password: "Pass-word-123!",
         portal: "patient",
       }),
     );
@@ -118,7 +118,7 @@ describe("authentication", () => {
   it("blocks suspended and deactivated accounts", async () => {
     await createUser("doctor", "blocked@test.local", { accountStatus: "deactivated" });
     fails(
-      await ctx.client().post("/auth/login", { email: "blocked@test.local", password: "pass-word-123" }),
+      await ctx.client().post("/auth/login", { email: "blocked@test.local", password: "Pass-word-123!" }),
       403,
       "ACCOUNT_RESTRICTED",
     );
@@ -136,6 +136,20 @@ describe("authentication", () => {
       { origin: "http://localhost:5173" },
     );
     ok(allowed, 201);
+    // while developing, a second local copy of the website (another port) is fine too
+    ok(
+      await admin.post("/admin/specialties", { name: "Other Port" }, { origin: "http://localhost:5174" }),
+      201,
+    );
+    fails(
+      await admin.post(
+        "/admin/specialties",
+        { name: "Look Alike" },
+        { origin: "http://localhost.evil.example" },
+      ),
+      403,
+      "FORBIDDEN_ORIGIN",
+    );
   });
 
   it("throttles repeated wrong passwords", async () => {
@@ -463,7 +477,7 @@ describe("doctors", () => {
     ok(
       await session.post("/auth/login", {
         email: "colleague@test.local",
-        password: "pass-word-123",
+        password: "Pass-word-123!",
         portal: "doctor",
       }),
     );
@@ -474,7 +488,7 @@ describe("doctors", () => {
     assert.equal(result.publicationStatus, "inactive");
     fails(await session.get("/auth/me"), 401);
     fails(
-      await ctx.client().post("/auth/login", { email: "colleague@test.local", password: "pass-word-123" }),
+      await ctx.client().post("/auth/login", { email: "colleague@test.local", password: "Pass-word-123!" }),
       403,
       "ACCOUNT_RESTRICTED",
     );

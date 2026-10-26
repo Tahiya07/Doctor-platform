@@ -31,7 +31,7 @@ async function renderAsAdmin(path) {
 /** Fills whichever sign-in form is on screen (any portal). */
 async function signIn(user, email = "someone@example.test") {
   await user.type(await screen.findByLabelText(/^Email/), email);
-  await user.type(screen.getByLabelText(/^Password/), "correct-horse");
+  await user.type(screen.getByLabelText(/^Password/), "Correct-horse-1!");
   await user.click(screen.getByRole("button", { name: /^Sign in/ }));
 }
 
@@ -40,8 +40,8 @@ async function signUp(user, { name = "Nila Akter", email = "nila@example.test" }
   await user.type(await screen.findByLabelText(/^Full name/), name);
   await user.type(screen.getByLabelText(/^Email/), email);
   await user.type(screen.getByLabelText(/^Phone number/), "+8801811111111");
-  await user.type(screen.getByLabelText(/^Password/), "correct-horse");
-  await user.type(screen.getByLabelText(/^Confirm password/), "correct-horse");
+  await user.type(screen.getByLabelText(/^Password/), "Correct-horse-1!");
+  await user.type(screen.getByLabelText(/^Confirm password/), "Correct-horse-1!");
   await user.click(screen.getByRole("button", { name: /Create account/ }));
 }
 
@@ -174,7 +174,7 @@ describe("sign-up and email verification", () => {
     await user.click(screen.getByRole("button", { name: /Create account/ }));
     expect(await screen.findByText("Enter your full name.")).toBeInTheDocument();
     expect(screen.getByText("Enter a valid email address.")).toBeInTheDocument();
-    expect(screen.getByText("Use at least 8 characters.")).toBeInTheDocument();
+    expect(screen.getByText("Use at least 10 characters.")).toBeInTheDocument();
     expect(screen.getByText("The passwords don’t match.")).toBeInTheDocument();
   });
 
@@ -435,7 +435,7 @@ describe("joining as a doctor", () => {
     name: "Dr. Rumana Sultana",
     email: "rumana@example.test",
     phone: "+8801711000000",
-    password: "doctor-pass-123",
+    password: "Doctor-pass-123!",
     specialtyId: "cardiology",
     qualifications: ["MBBS"],
     experienceYears: 6,
@@ -484,8 +484,8 @@ describe("joining as a doctor", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: /Welcome, Dr. Rumana Sultana/ }),
     ).toBeInTheDocument();
-    await user.type(screen.getByLabelText(/^Password/), "senior-pass-1");
-    await user.type(screen.getByLabelText(/Confirm password/), "senior-pass-1");
+    await user.type(screen.getByLabelText(/^Password/), "Senior-pass-1!");
+    await user.type(screen.getByLabelText(/Confirm password/), "Senior-pass-1!");
     await user.click(screen.getByRole("button", { name: /Set password and continue/ }));
     expect(
       await screen.findByRole("heading", { level: 1, name: "Your doctor application" }),

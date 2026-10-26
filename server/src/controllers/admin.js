@@ -259,6 +259,7 @@ export const setPublication = async (request, response) => {
       to: doctor.user.email,
       name: doctor.user.name,
       link: appLink(LINKS.doctorDashboard),
+      language: doctor.user.language,
     });
   if (status !== doctor.publicationStatus)
     await notifyDoctor(id, {

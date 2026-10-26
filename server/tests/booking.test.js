@@ -6,7 +6,7 @@ let ctx;
 let clinic;
 let otherClinic;
 let counter = 0;
-const PASSWORD = "pass-word-123";
+const PASSWORD = "Pass-word-123!";
 const day = (offset) => ctx.addDays(ctx.dhakaNow().date, offset);
 
 const ok = (response, status = 200) => {

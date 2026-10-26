@@ -110,6 +110,8 @@ error message) and translate it to the API error above.
 | `message.sender`, `isMine` | `message.sender.role`, `senderId = current user` | |
 | `message.sentAt`, `readAt` | `createdAt`, `readAt` | |
 | `attachmentUrl` | signed URL built from `message_attachments.storageKey` | Bucket is private. |
+| *(not in the API)* | `users.language` (`en` or `bn`) | The language of the emails this person receives; kept in step with the website's language button (`X-Language` header). |
+| *(not in the API)* | `users.failedLoginCount`, `users.lockedUntil` | Administrator sign-in lock: the 4th wrong password sets `lockedUntil` 30 minutes ahead (see docs/ADMIN_GUIDE.md). |
 | `user.photoUrl` | `users.photoKey` (storage key) + `users.photoUpdatedAt` | URL is built as `/api/v1/photos/users/<id>?v=<photoUpdatedAt>`; the file is in the private bucket. |
 | `doctor.rating`, `doctor.reviewCount` | `AVG(reviews.rating)` / `COUNT(*)` over `reviews` where `status = visible` | Computed per request; 0 when there are none. |
 | `review.*` | `reviews` (`rating`, `comment`, `status` visible\|hidden) | `author` is shown as the patient's first name and last initial. |

@@ -1,0 +1,467 @@
+/* Home page: the full-width banner and the sections below the doctors. Loaded after pages.css, before responsive.css. */
+
+.home-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: clamp(470px, 46vw, 600px);
+  margin: 4px 0 34px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 18px;
+  background: #0b1f33;
+  box-shadow: var(--shadow-md);
+  isolation: isolate;
+}
+.home-hero-image {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 72% 40%;
+}
+/* The photo stays bright on the right; the left is darkened so the headline is always readable, in either theme. */
+.home-hero-shade {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(8, 22, 38, 0.97) 0%,
+      rgba(8, 22, 38, 0.9) 33%,
+      rgba(8, 22, 38, 0.45) 60%,
+      rgba(8, 22, 38, 0.04) 100%
+    ),
+    linear-gradient(0deg, rgba(8, 22, 38, 0.72), transparent 38%);
+}
+.home-hero .hero-copy {
+  max-width: min(540px, 58%);
+  padding: 44px 0 118px 46px;
+  color: #f4f8ff;
+}
+.home-hero .hero-copy > .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: #8be0d4;
+}
+.home-hero .hero-copy > .eyebrow i {
+  width: 7px;
+  height: 7px;
+  background: #5fd8c8;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px rgba(95, 216, 200, 0.2);
+}
+.home-hero h1 {
+  margin: 0 0 16px;
+  color: #fff;
+  font-size: clamp(38px, 4.7vw, 62px);
+  line-height: 1.07;
+  letter-spacing: -2.6px;
+  font-weight: 700;
+}
+.home-hero h1 em {
+  color: #7fe3d4;
+  font-style: normal;
+}
+.home-hero .hero-copy > p {
+  max-width: 420px;
+  margin: 0 0 22px;
+  color: #c3d3e2;
+  font-size: 16px;
+  line-height: 1.75;
+}
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.button-hero-ghost {
+  color: #f4f8ff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+}
+.button-hero-ghost:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+.home-hero-stats {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  left: 20px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: #f4f8ff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 13px;
+  background: rgba(8, 22, 38, 0.58);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.home-hero-stats li {
+  display: grid;
+  gap: 2px;
+  padding: 13px 18px;
+}
+.home-hero-stats li + li {
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
+}
+.home-hero-stats strong {
+  font: 700 22px/1.2 var(--font-display);
+  letter-spacing: -0.5px;
+}
+.home-hero-stats span {
+  color: #b9cbdb;
+  font-size: 12.5px;
+}
+
+/* Sections --------------------------------------------------------------- */
+.home-section {
+  margin: 0 0 56px;
+}
+.home-section .section-heading {
+  margin-bottom: 20px;
+}
+.home-section .section-heading h2 {
+  font-size: 30px;
+}
+.home-section .section-heading h2 em {
+  color: var(--color-brand-secondary);
+  font-style: normal;
+}
+
+.specialty-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.specialty-card {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 18px;
+  color: inherit;
+  text-align: left;
+  border-radius: 14px;
+  cursor: pointer;
+  transition:
+    transform 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.specialty-card:hover {
+  border-color: var(--color-brand-secondary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+}
+.specialty-icon,
+.step-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  color: var(--color-brand-secondary);
+  border-radius: 12px;
+  background: var(--color-verified-bg);
+}
+.specialty-card strong {
+  margin-top: 8px;
+  font: 700 16px/1.3 var(--font-display);
+}
+.specialty-card small {
+  color: var(--color-text-tertiary);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.specialty-count {
+  margin-top: 4px;
+  color: var(--color-brand-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.step-card {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  padding: 24px;
+  border-radius: 16px;
+}
+.step-number {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  color: var(--color-text-muted);
+  font: 700 34px/1 var(--font-display);
+  opacity: 0.35;
+}
+.step-card h3,
+.why-card h3 {
+  margin: 6px 0 0;
+  font: 700 18px/1.3 var(--font-display);
+  letter-spacing: -0.3px;
+}
+.step-card p,
+.why-card p {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.facility-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.facility-tile {
+  display: grid;
+  overflow: hidden;
+  color: inherit;
+  border-radius: 14px;
+  text-decoration: none;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+.facility-tile:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+}
+.facility-tile img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+}
+.facility-tile > div {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  padding: 13px 14px 15px;
+}
+.facility-tile strong {
+  font: 700 15px/1.35 var(--font-display);
+}
+.facility-tile small {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-text-tertiary);
+  font-size: 12.5px;
+}
+
+.why-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.why-card {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 22px;
+  border-radius: 16px;
+}
+
+.doctor-invite {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  align-items: center;
+  gap: 40px;
+  overflow: hidden;
+  padding: 0 40px 0 0;
+  border-radius: 18px;
+}
+.doctor-invite > img {
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  object-fit: cover;
+  object-position: 50% 20%;
+}
+.doctor-invite h2 {
+  margin: 8px 0 10px;
+  font-size: 30px;
+  letter-spacing: -1px;
+  line-height: 1.15;
+}
+.doctor-invite h2 em {
+  color: var(--color-brand-secondary);
+  font-style: normal;
+}
+.doctor-invite p {
+  max-width: 480px;
+  margin: 0 0 14px;
+  color: var(--color-text-tertiary);
+}
+.doctor-invite ul {
+  display: grid;
+  gap: 9px;
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+.doctor-invite li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+.doctor-invite li svg {
+  flex: none;
+  margin-top: 3px;
+  color: var(--color-brand-secondary);
+}
+
+.faq-list {
+  display: grid;
+  gap: 10px;
+}
+.faq-item {
+  padding: 0 20px;
+  border-radius: 13px;
+}
+.faq-item summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 0;
+  font: 600 15.5px/1.4 var(--font-display);
+  cursor: pointer;
+  list-style: none;
+}
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+.faq-item summary svg {
+  flex: none;
+  color: var(--color-text-muted);
+  transition: transform 0.2s;
+}
+.faq-item[open] summary svg {
+  transform: rotate(180deg);
+}
+.faq-item p {
+  max-width: 680px;
+  margin: 0 0 18px;
+  color: var(--color-text-tertiary);
+  font-size: 14.5px;
+  line-height: 1.75;
+}
+
+@media (max-width: 1100px) {
+  .specialty-grid,
+  .facility-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .why-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .home-hero .hero-copy {
+    max-width: 62%;
+    padding-left: 34px;
+  }
+  .doctor-invite {
+    gap: 26px;
+    padding-right: 26px;
+  }
+}
+@media (max-width: 760px) {
+  /* Phone: the photo on top, the words on the plain background underneath, so nothing covers the faces. */
+  .home-hero {
+    display: block;
+    min-height: 0;
+    border-radius: 16px;
+  }
+  .home-hero-image {
+    position: relative;
+    z-index: 0;
+    height: 300px;
+    object-position: 68% 30%;
+  }
+  .home-hero-shade {
+    inset: 0 0 auto;
+    z-index: 0;
+    height: 300px;
+    background: linear-gradient(0deg, #0b1f33 0%, rgba(11, 31, 51, 0.45) 22%, transparent 55%);
+  }
+  .home-hero .hero-copy {
+    position: relative;
+    max-width: none;
+    padding: 4px 20px 20px;
+  }
+  .home-hero h1 {
+    font-size: clamp(36px, 11vw, 50px);
+    letter-spacing: -2px;
+  }
+  .home-hero-stats {
+    position: static;
+    margin: 0 12px 12px;
+    grid-template-columns: 1fr 1fr;
+  }
+  .home-hero-stats li {
+    padding: 10px 14px;
+  }
+  .home-hero-stats li:nth-child(odd) {
+    border-left: 0;
+  }
+  .home-hero-stats li:nth-child(n + 3) {
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+  }
+  .home-section {
+    margin-bottom: 42px;
+  }
+  .home-section .section-heading h2 {
+    font-size: 25px;
+  }
+  .steps-grid,
+  .why-grid {
+    grid-template-columns: 1fr;
+  }
+  .doctor-invite {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 0 20px 24px;
+  }
+  .doctor-invite > img {
+    width: calc(100% + 40px);
+    min-height: 0;
+    height: 280px;
+    margin: 0 -20px 22px;
+  }
+}
+@media (max-width: 480px) {
+  .specialty-grid,
+  .facility-strip {
+    grid-template-columns: 1fr;
+  }
+  .specialty-card {
+    grid-template-columns: auto 1fr;
+    column-gap: 14px;
+    align-items: center;
+  }
+  .specialty-card .specialty-icon {
+    grid-row: span 3;
+  }
+  .specialty-card strong {
+    margin-top: 0;
+  }
+}

@@ -98,6 +98,7 @@ function dateWords(text) {
 
 // Sentences with a name, a count or a status inside. {1} = text as written, {t1} = translated, {d1} = Bengali digits.
 const PATTERNS = [
+  [/^(\d+) doctors?$/, "{d1} জন ডাক্তার"],
   // sentences the server sends (names stay as written; dates and times are converted)
   [
     /^(.+?) accepted your request for (\d{4}-\d{2}-\d{2}) at (\d{1,2}:\d{2} [AP]M) at (.+?)\. You can now message the doctor\.$/,

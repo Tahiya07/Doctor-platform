@@ -149,10 +149,10 @@
 :root {
   --color-glass-border-soft: rgba(37, 99, 235, 0.16);
 }
-/* Bengali mode: Hind Siliguri everywhere, and no negative letter-spacing or tight line-height, which break Bengali letters. */
+/* Bengali mode: Noto Sans Bengali everywhere, and no negative letter-spacing or tight line-height, which break Bengali letters. */
 :root[data-language="bn"] {
-  --font-body: "Hind Siliguri", "Noto Sans Bengali", "Nirmala UI", sans-serif;
-  --font-display: "Hind Siliguri", "Noto Sans Bengali", "Nirmala UI", sans-serif;
+  --font-body: "Noto Sans Bengali", "Nirmala UI", sans-serif;
+  --font-display: "Noto Sans Bengali", "Nirmala UI", sans-serif;
 }
 :root[data-language="bn"] body,
 :root[data-language="bn"] button,

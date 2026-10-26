@@ -69,6 +69,17 @@ describe("translate", () => {
     expect(translate("New 5-star review")).toBe("নতুন ৫ তারার রিভিউ");
   });
 
+  it("translates the password rules and the sign-in lock", () => {
+    expect(translate("Add a capital letter.")).toBe("একটি বড় হাতের (A–Z) অক্ষর যোগ করুন।");
+    expect(translate("10 or more characters")).toBe("১০ বা তার বেশি অক্ষর");
+    expect(translate("Show password")).toBe("পাসওয়ার্ড দেখুন");
+    expect(
+      translate(
+        "Too many wrong passwords. Sign-in is locked for 30 minutes. Reset your password by email to unlock it sooner.",
+      ),
+    ).toMatch(/৩০ মিনিটের জন্য বন্ধ/);
+  });
+
   it("translates the parts of a joined text that have Bengali", () => {
     expect(translate(", Dhaka")).toBe(", ঢাকা");
     expect(translate("Agrabad Specialist Clinic · Agrabad")).toBe("আগ্রাবাদ স্পেশালিস্ট ক্লিনিক · আগ্রাবাদ");

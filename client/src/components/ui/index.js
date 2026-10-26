@@ -15,6 +15,7 @@ export { default as ListToolbar } from "./ListToolbar.jsx";
 export { default as Modal } from "./Modal.jsx";
 export { default as Notice } from "./Notice.jsx";
 export { default as PageLoader } from "./PageLoader.jsx";
+export { default as PasswordInput } from "./PasswordInput.jsx";
 export { default as Pill } from "./Pill.jsx";
 export { default as ScrollReveal } from "./ScrollReveal.jsx";
 export { default as SectionHeading } from "./SectionHeading.jsx";

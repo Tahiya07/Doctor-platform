@@ -1,7 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
-import { Button, Field, Notice, SectionHeading } from "../../components/ui/index.js";
+import { Button, Field, Notice, PasswordInput, SectionHeading } from "../../components/ui/index.js";
 import { isDemoMode, PATHS, ROLES } from "../../constants.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
@@ -97,7 +97,12 @@ export default function LoginPage({ portal }) {
             <input name="email" type="email" required autoComplete="username" />
           </Field>
           <Field label="Password">
-            <input name="password" type="password" required autoComplete="current-password" />
+            <PasswordInput
+              name="password"
+              required
+              autoComplete="current-password"
+              reveal={portal !== ROLES.ADMIN}
+            />
           </Field>
         </div>
         <Notice error>{error}</Notice>

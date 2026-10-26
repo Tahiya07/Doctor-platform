@@ -15,6 +15,7 @@ import { codeHash, issueVerificationCode } from "../services/emailCodes.js";
 import { sendPasswordResetEmail } from "../services/mail.js";
 import { LINKS, notify } from "../services/notifications.js";
 import { ApiError, parse } from "../utils/errors.js";
+import { strongPassword } from "../utils/password.js";
 
 /**
  * Account lifecycle: patient sign-up, email verification, forgotten password, profile and
@@ -44,11 +45,7 @@ const phone = z
   .string()
   .trim()
   .regex(/^\+?[0-9\s-]{8,18}$/, "Enter a valid phone number.");
-// bcrypt only reads the first 72 bytes, so longer passwords would be silently cut.
-const newPassword = z
-  .string()
-  .min(8, "Use at least 8 characters.")
-  .refine((value) => Buffer.byteLength(value) <= 72, "Use at most 72 characters.");
+const newPassword = strongPassword;
 
 // ── POST /auth/patient/register ───────────────────────────────────────────────────────────
 const registerSchema = z.object({ name, email, phone, password: newPassword });
@@ -69,6 +66,7 @@ export const registerPatient = async (request, response) => {
       phone: input.phone,
       passwordHash: await hashPassword(input.password),
       role: "patient",
+      language: request.language ?? "en",
     },
   });
   await startSession(request, response, user.id);
@@ -174,6 +172,7 @@ export const forgotPassword = async (request, response) => {
       name: user.name,
       link: `${env.appUrl}#/reset-password?token=${token}`,
       minutes: RESET_MINUTES,
+      language: request.language ?? user.language,
     });
   }
   response.json({ sent: true });
@@ -199,7 +198,8 @@ export const resetPassword = async (request, response) => {
 
   await prisma.user.update({
     where: { id: reset.userId },
-    data: { passwordHash: await hashPassword(password) },
+    // Reaching this link proves the mailbox is theirs, so it also lifts an administrator's sign-in lock.
+    data: { passwordHash: await hashPassword(password), failedLoginCount: 0, lockedUntil: null },
   });
   // Opening the emailed link also proves the address is theirs.
   await prisma.user.updateMany({

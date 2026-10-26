@@ -6,7 +6,15 @@ export const SERVER = {
   "That name is too long.": "নামটি অনেক বড়।",
   "Enter a valid email address.": "সঠিক একটি ইমেইল ঠিকানা লিখুন।",
   "Enter a valid phone number.": "সঠিক একটি ফোন নম্বর লিখুন।",
-  "Use at least 8 characters.": "কমপক্ষে ৮টি অক্ষর ব্যবহার করুন।",
+  "Use at least 10 characters.": "কমপক্ষে ১০টি অক্ষর ব্যবহার করুন।",
+  "Add a lowercase letter.": "একটি ছোট হাতের (a–z) অক্ষর যোগ করুন।",
+  "Add a capital letter.": "একটি বড় হাতের (A–Z) অক্ষর যোগ করুন।",
+  "Add a number.": "একটি সংখ্যা যোগ করুন।",
+  "Add a symbol, such as ! or @.": "! বা @ এর মতো একটি চিহ্ন যোগ করুন।",
+  "Avoid obvious words such as “password” or “123456”.":
+    "“password” বা “123456”-এর মতো সহজ শব্দ এড়িয়ে চলুন।",
+  "Too many wrong passwords. Sign-in is locked for 30 minutes. Reset your password by email to unlock it sooner.":
+    "অনেকবার ভুল পাসওয়ার্ড দেওয়া হয়েছে। সাইন ইন ৩০ মিনিটের জন্য বন্ধ। আগে খুলতে ইমেইলে পাসওয়ার্ড রিসেট করুন।",
   "Use at most 72 characters.": "সর্বোচ্চ ৭২টি অক্ষর ব্যবহার করুন।",
   "Too many accounts were created from this connection. Try again later.":
     "এই সংযোগ থেকে অনেক অ্যাকাউন্ট খোলা হয়েছে। পরে আবার চেষ্টা করুন।",

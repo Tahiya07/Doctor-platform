@@ -1,7 +1,8 @@
 import { KeyRound } from "lucide-react";
 import { useState } from "react";
 import { authService } from "../../services/index.js";
-import { Button, Field, Notice } from "../ui/index.js";
+import { Button, Field, Notice, PasswordInput } from "../ui/index.js";
+import { passwordProblem } from "../../utils/password.js";
 
 /** Lets a signed-in patient replace their password. Other devices are signed out by the server. */
 export default function ChangePasswordForm() {
@@ -20,7 +21,7 @@ export default function ChangePasswordForm() {
     };
     const found = {};
     if (!input.currentPassword) found.currentPassword = "Enter your current password.";
-    if (input.newPassword.length < 8) found.newPassword = "Use at least 8 characters.";
+    if (passwordProblem(input.newPassword)) found.newPassword = passwordProblem(input.newPassword);
     if (input.newPassword !== String(data.get("confirm"))) found.confirm = "The passwords don’t match.";
     setErrors(found);
     setMessage("");
@@ -45,13 +46,13 @@ export default function ChangePasswordForm() {
       <h3>Change password</h3>
       <div className="form-grid">
         <Field label="Current password" error={errors.currentPassword}>
-          <input name="currentPassword" type="password" required autoComplete="current-password" />
+          <PasswordInput name="currentPassword" required autoComplete="current-password" />
         </Field>
-        <Field label="New password" error={errors.newPassword} hint="At least 8 characters.">
-          <input name="newPassword" type="password" required minLength={8} autoComplete="new-password" />
+        <Field label="New password" error={errors.newPassword}>
+          <PasswordInput name="newPassword" required autoComplete="new-password" rules />
         </Field>
         <Field label="Confirm new password" error={errors.confirm}>
-          <input name="confirm" type="password" required autoComplete="new-password" />
+          <PasswordInput name="confirm" required autoComplete="new-password" />
         </Field>
       </div>
       <Notice error>{formError}</Notice>

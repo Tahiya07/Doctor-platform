@@ -3,6 +3,7 @@ import { prisma } from "../config/prisma.js";
 import { rateLimit } from "../middleware/rateLimit.js";
 import { appointmentInclude, toAppointment } from "../models/appointment.js";
 import { changeAppointmentStatus, PATIENT_TRANSITIONS } from "../services/appointments.js";
+import { emailDoctor, emailPatient } from "../services/appointmentMail.js";
 import { LINKS, notify, notifyDoctor, preview } from "../services/notifications.js";
 import { ApiError, conflict, notFound, parse, uuid } from "../utils/errors.js";
 import { clock, dateKey, dhakaNow, minutesOf, timeLabel, toDbDate } from "../utils/time.js";
@@ -159,6 +160,8 @@ export const createAppointmentRequest = async (request, response) => {
     body: `Your request to ${result.doctor.name} for ${result.date} at ${result.time} is waiting for an answer.`,
     link: LINKS.appointments,
   });
+  void emailDoctor(created.doctorId, "doctorNewRequest", result, { forOther: data.relationship !== "self" });
+  void emailPatient(request.user.id, "appointmentRequested", result);
   response.status(201).json(result);
 };
 

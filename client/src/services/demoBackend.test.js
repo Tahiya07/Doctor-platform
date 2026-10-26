@@ -42,7 +42,7 @@ const newAccount = (overrides = {}) => ({
   name: "Nila Akter",
   email: "nila@example.test",
   phone: "+8801811111111",
-  password: "correct-horse",
+  password: "Correct-horse-1!",
   ...overrides,
 });
 
@@ -110,13 +110,13 @@ describe("patient accounts", () => {
   it("changes the password only with the current one and a long enough new one", async () => {
     await signInPatient();
     await expect(
-      authService.changePassword({ currentPassword: "", newPassword: "long-enough-1" }),
+      authService.changePassword({ currentPassword: "", newPassword: "Long-enough-1!" }),
     ).rejects.toMatchObject({ status: 422 });
     await expect(
       authService.changePassword({ currentPassword: "old-pass-123", newPassword: "short" }),
     ).rejects.toMatchObject({ status: 422 });
     await expect(
-      authService.changePassword({ currentPassword: "old-pass-123", newPassword: "long-enough-1" }),
+      authService.changePassword({ currentPassword: "old-pass-123", newPassword: "Long-enough-1!" }),
     ).resolves.toMatchObject({ changed: true });
   });
 });
@@ -503,7 +503,7 @@ describe("doctor applications", () => {
       name: "Dr. New Applicant",
       email: "applicant@example.test",
       phone: "+8801711000000",
-      password: "doctor-pass-123",
+      password: "Doctor-pass-123!",
       specialtyId: "cardiology",
       qualifications: ["MBBS"],
       experienceYears: 4,
@@ -588,7 +588,7 @@ describe("doctor applications", () => {
 
     const token = invited.simulatedInvitationToken;
     expect((await authService.getInvitation(token)).email).toBe("senior@example.test");
-    const { user } = await authService.acceptInvitation({ token, password: "senior-pass-1" });
+    const { user } = await authService.acceptInvitation({ token, password: "Senior-pass-1!" });
     expect(user).toMatchObject({ onboardingStatus: "in_progress", emailVerified: true });
     await expect(authService.getInvitation(token)).rejects.toMatchObject({ status: 410 });
   });

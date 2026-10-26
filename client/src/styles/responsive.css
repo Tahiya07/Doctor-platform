@@ -12,24 +12,8 @@
   .topbar {
     padding: 0 28px;
   }
-  .hero {
-    gap: 35px;
-  }
   .doctor-grid {
     gap: 11px;
-  }
-  .doctor-photo {
-    height: 145px;
-  }
-  .trust-strip {
-    gap: 12px;
-    padding: 19px;
-  }
-  .trust-note {
-    display: none;
-  }
-  .trust-strip {
-    grid-template-columns: 1.25fr 0.8fr 0.8fr 0.8fr;
   }
 }
 @media (max-width: 900px) {
@@ -53,15 +37,6 @@
   }
   .topbar-actions {
     margin-left: auto;
-  }
-  .hero {
-    min-height: 390px;
-  }
-  .hero h1 {
-    font-size: 61px;
-  }
-  .hero-visual {
-    --hero-image-height: 440px;
   }
   .doctor-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -127,34 +102,6 @@
   .page-footer > span:nth-child(2) {
     display: none;
   }
-  .hero {
-    grid-template-columns: 1fr;
-    gap: 25px;
-    padding: 8px 0 22px;
-  }
-  .hero h1 {
-    font-size: clamp(44px, 13vw, 62px);
-    letter-spacing: -2.7px;
-  }
-  .hero-copy > p {
-    max-width: 430px;
-    font-size: 15px;
-  }
-  .hero-image-wrap {
-    width: min(100% - 18px, 340px);
-    height: auto;
-    margin: 0 auto;
-  }
-  .hero-caption {
-    width: min(100% - 18px, 340px);
-  }
-  .hero-image,
-  .hero-image-overlay {
-    border-radius: 48% 48% 10px 10px;
-  }
-  .hero-caption {
-    font-size: 12px;
-  }
   .search-section {
     margin: 0 0 30px;
   }
@@ -191,29 +138,6 @@
   .quick-search button {
     flex: none;
   }
-  .trust-strip {
-    grid-template-columns: 1fr 1fr;
-    gap: 13px;
-    margin: 30px 0 36px;
-    padding: 15px;
-  }
-  .trust-strip > div:first-child {
-    grid-column: 1/-1;
-    padding-bottom: 9px;
-    border-bottom: 1px solid var(--color-border-default);
-  }
-  .trust-headline {
-    font-size: 20px;
-  }
-  .trust-stat {
-    padding-left: 10px;
-  }
-  .trust-stat strong {
-    font-size: 18px;
-  }
-  .trust-stat small {
-    font-size: 13px;
-  }
   .featured-section .section-heading {
     align-items: flex-start;
   }
@@ -245,10 +169,7 @@
     grid-template-columns: 1fr;
   }
   .doctor-photo {
-    height: 190px;
-  }
-  .doctor-card .doctor-photo img {
-    object-position: center 34%;
+    aspect-ratio: 4 / 3;
   }
   .doctor-info {
     padding: 13px;

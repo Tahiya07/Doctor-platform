@@ -4,7 +4,7 @@ import { findDoctors } from "../models/doctor.js";
 import { withReviewDetails } from "../services/applications.js";
 import { revokeAllSessions } from "../services/auth.js";
 import { sendStoredFile } from "../services/files.js";
-import { sendMail } from "../services/mail.js";
+import { sendSupportReplyEmail } from "../services/mail.js";
 import { LINKS, notify, notifyDoctor, preview } from "../services/notifications.js";
 import { ApiError, conflict, notFound, parse, uuid } from "../utils/errors.js";
 
@@ -137,7 +137,7 @@ export const declineDeactivation = async (request, response) => {
 
 // ── Support requests ──────────────────────────────────────────────────────────────────────
 const STATUSES = ["received", "in_progress", "resolved"];
-const supportInclude = { user: { select: { name: true, email: true } } };
+const supportInclude = { user: { select: { name: true, email: true, language: true } } };
 const toSupport = (row) => ({
   id: row.id,
   message: row.message,
@@ -201,10 +201,12 @@ export const replyToSupportRequest = async (request, response) => {
       "This person left no email address, so there is nobody to reply to.",
     );
 
-  const sent = await sendMail({
+  const sent = await sendSupportReplyEmail({
     to,
-    subject: "Your message to Carewell",
-    text: `Hello${found.user?.name ? ` ${found.user.name}` : ""},\n\n${message}\n\n— Carewell support\n\nYour message was:\n${found.message}`,
+    language: found.user?.language,
+    name: found.user?.name,
+    message,
+    original: found.message,
   });
   if (!sent) throw new ApiError(502, "EMAIL_FAILED", "The reply could not be sent. Please try again.");
 

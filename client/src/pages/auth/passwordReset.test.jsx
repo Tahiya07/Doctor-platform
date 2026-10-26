@@ -32,13 +32,13 @@ describe("password reset service (demo adapter)", () => {
 
   it("accepts a valid token and a strong enough password", async () => {
     await expect(
-      authService.resetPassword({ token: DEMO_RESET_TOKEN, password: "a-brand-new-one" }),
+      authService.resetPassword({ token: DEMO_RESET_TOKEN, password: "A-brand-new-one-1!" }),
     ).resolves.toEqual({ reset: true });
   });
 
   it("refuses a wrong or expired token (410) and a short password (422)", async () => {
     await expect(
-      authService.resetPassword({ token: "expired", password: "a-brand-new-one" }),
+      authService.resetPassword({ token: "expired", password: "A-brand-new-one-1!" }),
     ).rejects.toMatchObject({ status: 410, code: "RESET_TOKEN_INVALID" });
     await expect(
       authService.resetPassword({ token: DEMO_RESET_TOKEN, password: "short" }),
@@ -77,8 +77,8 @@ describe("forgot password screens", () => {
       await screen.findByRole("heading", { level: 1, name: "Choose a new password" }),
     ).toBeInTheDocument();
 
-    await user.type(screen.getByLabelText(/^New password/), "a-brand-new-one");
-    await user.type(screen.getByLabelText(/^Confirm new password/), "a-brand-new-one");
+    await user.type(screen.getByLabelText(/^New password/), "A-brand-new-one-1!");
+    await user.type(screen.getByLabelText(/^Confirm new password/), "A-brand-new-one-1!");
     await user.click(screen.getByRole("button", { name: "Update password" }));
 
     expect(await screen.findByRole("heading", { level: 1, name: "Sign in to Carewell" })).toBeInTheDocument();
@@ -109,14 +109,14 @@ describe("reset password screen", () => {
     await user.type(await screen.findByLabelText(/^New password/), "short");
     await user.type(screen.getByLabelText(/^Confirm new password/), "different");
     await user.click(screen.getByRole("button", { name: "Update password" }));
-    expect(await screen.findByText("Use at least 8 characters.")).toBeInTheDocument();
+    expect(await screen.findByText("Use at least 10 characters.")).toBeInTheDocument();
     expect(screen.getByText("The passwords don’t match.")).toBeInTheDocument();
   });
 
   it("explains an expired link and offers a new one", async () => {
     const user = renderApp("/reset-password?token=expired-token");
-    await user.type(await screen.findByLabelText(/^New password/), "a-brand-new-one");
-    await user.type(screen.getByLabelText(/^Confirm new password/), "a-brand-new-one");
+    await user.type(await screen.findByLabelText(/^New password/), "A-brand-new-one-1!");
+    await user.type(screen.getByLabelText(/^Confirm new password/), "A-brand-new-one-1!");
     await user.click(screen.getByRole("button", { name: "Update password" }));
     expect(await screen.findByText("This link has expired")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Request a new link" })).toHaveAttribute(

@@ -64,6 +64,9 @@ export async function request(path, options = {}) {
       credentials: config.sendCredentials ? "include" : "same-origin",
       headers: {
         Accept: "application/json",
+        // The website's language, so the server writes its emails to this person in it.
+        "X-Language":
+          typeof document !== "undefined" && document.documentElement.dataset.language === "bn" ? "bn" : "en",
         ...(body !== undefined && !isFormData ? { "Content-Type": "application/json" } : {}),
         ...headers,
       },

@@ -34,6 +34,7 @@ import { ApiError } from "./httpClient.js";
 import { clockLabelToMinutes, clockToLabel, localDateKey, splitIntoSlots } from "../utils/dates.js";
 import { slugify } from "../utils/format.js";
 import { isValidEmail, isValidPhone } from "../utils/validation.js";
+import { passwordProblem } from "../utils/password.js";
 
 // ─── db ────────────────────────────────────────────────────────────────────────────────────
 
@@ -508,8 +509,8 @@ export const authService = {
 
   async acceptInvitation({ token, password }) {
     const doctor = invitedDoctor(token);
-    if ((password ?? "").length < 8)
-      throw invalid("Use at least 8 characters.", { password: "Use at least 8 characters." });
+    const problem = passwordProblem(password ?? "");
+    if (problem) throw invalid(problem, { password: problem });
     Object.assign(doctor, {
       onboardingStatus: ONBOARDING_STATUS.IN_PROGRESS,
       emailVerified: true,
@@ -576,7 +577,8 @@ export const authService = {
         status: 410,
         code: "RESET_TOKEN_INVALID",
       });
-    if ((password ?? "").length < 8) throw invalid("Use at least 8 characters.");
+    const problem = passwordProblem(password ?? "");
+    if (problem) throw invalid(problem, { password: problem });
     return reply({ reset: true });
   },
 
@@ -592,8 +594,8 @@ export const authService = {
     requireRole(ROLES.PATIENT);
     if (!currentPassword)
       throw invalid("Enter your current password.", { currentPassword: "Enter your current password." });
-    if ((newPassword ?? "").length < 8)
-      throw invalid("Use at least 8 characters.", { newPassword: "Use at least 8 characters." });
+    const problem = passwordProblem(newPassword ?? "");
+    if (problem) throw invalid(problem, { newPassword: problem });
     return reply({ changed: true });
   },
 

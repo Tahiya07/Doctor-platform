@@ -1,7 +1,7 @@
 // Test data builders shared by the onboarding, messaging and admin-review test files.
 import assert from "node:assert/strict";
 
-export const PASSWORD = "pass-word-123";
+export const PASSWORD = "Pass-word-123!";
 
 export const ok = (response, status = 200) => {
   assert.equal(

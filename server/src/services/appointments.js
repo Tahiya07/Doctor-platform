@@ -1,6 +1,7 @@
 import { prisma } from "../config/prisma.js";
 import { appointmentInclude, toAppointment } from "../models/appointment.js";
 import { conflict } from "../utils/errors.js";
+import { emailDoctor, emailPatient } from "./appointmentMail.js";
 import { LINKS, notify, notifyDoctor } from "./notifications.js";
 import { publish } from "./realtime.js";
 
@@ -50,6 +51,12 @@ async function announce(actor, appointment, patientId) {
         body: text[1],
         link: status === "accepted" ? LINKS.messages : LINKS.appointments,
       });
+    const kind = {
+      accepted: "appointmentAccepted",
+      rejected: "appointmentRejected",
+      cancelled: "appointmentCancelled",
+    }[status];
+    if (kind) void emailPatient(patientId, kind, appointment, { byAdmin: actor === "admin" });
   }
   if (toDoctor) {
     const text = {
@@ -77,6 +84,8 @@ async function announce(actor, appointment, patientId) {
         body: text[1],
         link: LINKS.doctorDashboard,
       });
+    if (status === "cancelled" && actor === "patient")
+      void emailDoctor(appointment.doctorId, "doctorPatientCancelled", appointment);
   }
 }
 

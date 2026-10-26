@@ -8,7 +8,8 @@ buildings shown have no connection to the names, qualifications or addresses on 
 - **Wikimedia Commons** photos need attribution, which is given below. The licence is shown in the table
   (CC0 needs no credit; CC BY-SA 3.0 / 4.0 requires credit and sharing changes under the same licence:
   <https://creativecommons.org/licenses/by-sa/4.0/>).
-- **Changes made:** every photo was cropped and resized (people to a head-and-shoulders portrait, buildings to a
+- **Changes made:** `hero/hero-clinic.jpg` was widened on the left with a blurred, mirrored copy of the wall so the headline has room.
+  Every photo was cropped and resized (people to a head-and-shoulders portrait, buildings to a
   wide banner) and saved as an optimised JPEG. On two building photos a legible hospital name was painted out
   (`dhanmondi-family-health-clinic.jpg`, `greenline-family-clinic.jpg`) so the picture does not contradict the facility's name.
 
@@ -26,7 +27,7 @@ so "Bangladeshi" here means shot in Bangladesh where the photo says so, otherwis
 | `doctors/imran.chowdhury.jpg` | Dr. Imran Chowdhury | [Unsplash](https://unsplash.com/photos/1O8CJy1A7Wo) | mohamad azaam | Unsplash licence |
 | `doctors/kamrul.hasan.jpg` | Dr. Kamrul Hasan | [Pexels](https://www.pexels.com/photo/19438563/) | see the photo page | Pexels licence |
 | `doctors/lamia.parvin.jpg` | Dr. Lamia Parvin | [Pexels](https://www.pexels.com/photo/7578810/) | see the photo page | Pexels licence |
-| `doctors/mahbub.alam.jpg` | Dr. Mahbub Alam | [Unsplash](https://unsplash.com/photos/3HE32KRqJs) | Muhammad Hicham | Unsplash licence |
+| `doctors/mahbub.alam.jpg` | Dr. Mahbub Alam | [Pexels](https://www.pexels.com/photo/10691259/) | see the photo page | Pexels licence |
 | `doctors/mehnaz.sultana.jpg` | Dr. Mehnaz Sultana | [Unsplash](https://unsplash.com/photos/H9lg5Noj660) | Fotos | Unsplash licence |
 | `doctors/nusrat.karim.jpg` | Dr. Nusrat Karim | [Pexels](https://www.pexels.com/photo/5738735/) | see the photo page | Pexels licence |
 | `doctors/rakibul.islam.jpg` | Dr. Rakibul Islam | [Pexels](https://www.pexels.com/photo/10695742/) | see the photo page | Pexels licence |
@@ -56,7 +57,8 @@ so "Bangladeshi" here means shot in Bangladesh where the photo says so, otherwis
 
 | File | Used for | Source | Author | Licence |
 | --- | --- | --- | --- | --- |
-| `hero/hero-doctor.jpg` | Landing page | Supplied by the project owner (cropped to a 4:5 portrait) | not recorded | Confirm the right to use before publishing |
+| `hero/hero-clinic.jpg` | Landing page banner (wide) | [Pexels](https://www.pexels.com/photo/14558560/) (the same photo gives Dr. Habibur Rahman's portrait) | see the photo page | Pexels licence |
+| `hero/hero-doctor.jpg` | Landing page, "Are you a doctor?" section | Supplied by the project owner (cropped to a 4:5 portrait) | not recorded | Confirm the right to use before publishing |
 
 ## Landing page patients
 

@@ -20,7 +20,7 @@
     "check": "npm run lint && npm run format:check && npm run test && npm run build"
   },
   "dependencies": {
-    "@fontsource/hind-siliguri": "^5.3.0",
+    "@fontsource/noto-sans-bengali": "^5.3.0",
     "framer-motion": "^14.4.0",
     "lucide-react": "^0.468.0",
     "react": "^19.1.0",

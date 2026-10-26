@@ -2,13 +2,14 @@ import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import DoctorProfileFields, { validateDoctorProfile } from "../../components/doctors/DoctorProfileFields.jsx";
-import { Button, Field, Notice, SectionHeading } from "../../components/ui/index.js";
+import { Button, Field, Notice, SectionHeading, PasswordInput } from "../../components/ui/index.js";
 import { isDemoMode, PATHS } from "../../constants.js";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { useCatalog } from "../../context/CatalogContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
 import { readDoctorProfileForm } from "../../utils/forms.js";
 import { isValidEmail, isValidPhone, PHONE_PATTERN } from "../../utils/validation.js";
+import { passwordProblem } from "../../utils/password.js";
 
 export default function DoctorRegisterPage() {
   const { registerDoctor } = useAuth();
@@ -33,7 +34,7 @@ export default function DoctorRegisterPage() {
     const found = validateDoctorProfile(profile);
     if (!isValidEmail(account.email)) found.email = "Enter a valid email address.";
     if (!isValidPhone(account.phone)) found.phone = "Enter a valid phone number.";
-    if (account.password.length < 8) found.password = "Use at least 8 characters.";
+    if (passwordProblem(account.password)) found.password = passwordProblem(account.password);
     setErrors(found);
     if (Object.keys(found).length) return;
 
@@ -66,8 +67,8 @@ export default function DoctorRegisterPage() {
           <Field label="Email" error={errors.email}>
             <input name="email" type="email" required autoComplete="email" />
           </Field>
-          <Field label="Password" error={errors.password} hint="At least 8 characters.">
-            <input name="password" type="password" minLength={8} required autoComplete="new-password" />
+          <Field label="Password" error={errors.password}>
+            <PasswordInput name="password" required autoComplete="new-password" rules />
           </Field>
           <Field label="Phone" error={errors.phone}>
             <input name="phone" type="tel" required pattern={PHONE_PATTERN} autoComplete="tel" />

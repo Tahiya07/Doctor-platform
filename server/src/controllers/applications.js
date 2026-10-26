@@ -2,16 +2,12 @@ import { z } from "zod";
 import { prisma } from "../config/prisma.js";
 import { rateLimit } from "../middleware/rateLimit.js";
 import { toUser, userDoctorSelect } from "../models/user.js";
-import {
-  announceApplication,
-  formatDay,
-  loadApplication,
-  reapplyAt,
-} from "../services/applications.js";
+import { announceApplication, formatDay, loadApplication, reapplyAt } from "../services/applications.js";
 import { hashPassword, revokeAllSessions, sha256, startSession } from "../services/auth.js";
 import { sendApplicationReceivedEmail } from "../services/mail.js";
 import { LINKS, notifyAdmins } from "../services/notifications.js";
 import { ApiError, conflict, notFound, parse } from "../utils/errors.js";
+import { strongPassword } from "../utils/password.js";
 
 /**
  * A doctor's application to join Carewell, from the doctor's side, and the invitation link that
@@ -58,7 +54,11 @@ export const submitApplication = async (request, response) => {
   });
   if (claimed.count === 0) throw conflict("INVALID_TRANSITION", "This application was already submitted.");
 
-  void sendApplicationReceivedEmail({ to: request.user.email, name: request.user.name });
+  void sendApplicationReceivedEmail({
+    to: request.user.email,
+    name: request.user.name,
+    language: request.user.language,
+  });
   await announceApplication(request.user.name);
   response.json(await loadApplication(doctor.id));
 };
@@ -126,10 +126,7 @@ export const getInvitation = async (request, response) => {
 
 const acceptSchema = z.object({
   token: z.string().min(1, "This invitation link is incomplete."),
-  password: z
-    .string()
-    .min(8, "Use at least 8 characters.")
-    .refine((value) => Buffer.byteLength(value) <= 72, "Use at most 72 characters."),
+  password: strongPassword,
 });
 
 /**

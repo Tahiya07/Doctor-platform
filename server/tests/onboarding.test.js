@@ -14,7 +14,7 @@ const registration = (extra = {}) => ({
   name: "Dr. Farhana Ahmed",
   email: `new.doctor${++counter}@test.local`,
   phone: "+880 1711 000000",
-  password: "doctor-pass-123",
+  password: "Doctor-pass-123!",
   specialtyId: "cardiology",
   qualifications: ["MBBS", "FCPS"],
   experienceYears: 8,

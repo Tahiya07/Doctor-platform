@@ -1,9 +1,17 @@
 import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Button, EmptyState, Field, Notice, SectionHeading } from "../../components/ui/index.js";
+import {
+  Button,
+  EmptyState,
+  Field,
+  Notice,
+  SectionHeading,
+  PasswordInput,
+} from "../../components/ui/index.js";
 import { PATHS } from "../../constants.js";
 import { authService } from "../../services/index.js";
+import { passwordProblem } from "../../utils/password.js";
 
 /**
  * Step 2 of a password reset: the page the emailed link opens (`#/reset-password?token=…`).
@@ -38,7 +46,7 @@ export default function ResetPasswordPage() {
     const data = new FormData(event.currentTarget);
     const password = String(data.get("password"));
     const found = {};
-    if (password.length < 8) found.password = "Use at least 8 characters.";
+    if (passwordProblem(password)) found.password = passwordProblem(password);
     if (password !== String(data.get("confirm"))) found.confirm = "The passwords don’t match.";
     setErrors(found);
     if (Object.keys(found).length) return;
@@ -78,11 +86,11 @@ export default function ResetPasswordPage() {
       />
       <form className="admin-form surface" onSubmit={submit} noValidate>
         <div className="form-grid">
-          <Field label="New password" error={errors.password} hint="At least 8 characters.">
-            <input name="password" type="password" required minLength={8} autoComplete="new-password" />
+          <Field label="New password" error={errors.password}>
+            <PasswordInput name="password" required autoComplete="new-password" rules />
           </Field>
           <Field label="Confirm new password" error={errors.confirm}>
-            <input name="confirm" type="password" required autoComplete="new-password" />
+            <PasswordInput name="confirm" required autoComplete="new-password" />
           </Field>
         </div>
         <Notice error>{formError}</Notice>

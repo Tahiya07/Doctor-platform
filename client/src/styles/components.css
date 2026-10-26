@@ -180,6 +180,51 @@ h3 {
   background: var(--color-surface-primary);
   font-size: 14px;
 }
+.password-input {
+  position: relative;
+  display: block;
+}
+.field .password-input input {
+  padding-right: 42px;
+}
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  color: var(--color-text-muted);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+.password-toggle:hover,
+.password-toggle[aria-pressed="true"] {
+  color: var(--color-text-primary);
+}
+.password-rules {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 3px 12px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-text-muted);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+.password-rules li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.password-rules li.is-met {
+  color: var(--color-success, #16a34a);
+}
 .field textarea {
   min-height: 82px;
   padding: 9px 10px;

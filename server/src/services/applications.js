@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { env } from "../config/env.js";
 import { prisma } from "../config/prisma.js";
 import { ApiError } from "../utils/errors.js";
+import { dayText } from "./language.js";
 import { sha256 } from "./auth.js";
 import { discardUpload, saveUpload } from "./files.js";
 import { sendDoctorInvitationEmail, sendNewApplicationEmail } from "./mail.js";
@@ -44,8 +45,7 @@ export const reapplyAt = (doctor) =>
     ? new Date(doctor.decidedAt.getTime() + REAPPLY_DAYS * DAY)
     : null;
 
-export const formatDay = (date) =>
-  date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Dhaka" });
+export const formatDay = (date, language = "en") => dayText(language, date);
 
 /** Links inside emails (the website uses hash routing). */
 export const appLink = (path) => `${env.appUrl}#${path}`;
@@ -154,10 +154,15 @@ export async function announceApplication(doctorName) {
   try {
     const admins = await prisma.user.findMany({
       where: { role: "admin", accountStatus: "active" },
-      select: { email: true },
+      select: { email: true, language: true },
     });
     for (const admin of admins)
-      void sendNewApplicationEmail({ to: admin.email, doctorName, link: appLink(LINKS.adminVerification) });
+      void sendNewApplicationEmail({
+        to: admin.email,
+        doctorName,
+        link: appLink(LINKS.adminVerification),
+        language: admin.language,
+      });
   } catch (error) {
     console.error(`[applications] could not email administrators: ${error.message}`);
   }
@@ -204,7 +209,6 @@ export async function storeCertificate(doctor, file, kind) {
     throw error;
   }
 }
-
 
 // ── The administrator's doctor list ────────────────────────────────────────────────────────
 const certificateUrl = (doctorId, id) => `/api/v1/admin/doctors/${doctorId}/certificates/${id}`;

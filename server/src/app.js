@@ -4,7 +4,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { env } from "./config/env.js";
 import { checkDatabase } from "./config/pool.js";
-import { authenticate, checkOrigin } from "./middleware/authenticate.js";
+import { authenticate, checkOrigin, isAllowedOrigin } from "./middleware/authenticate.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { mountRoutes } from "./routes/index.js";
 import { checkStorage } from "./services/storage.js";
@@ -14,7 +14,9 @@ export const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", env.trustProxy);
 app.use(helmet());
-app.use(cors({ origin: env.clientOrigins, credentials: true }));
+app.use(
+  cors({ origin: (origin, done) => done(null, !origin || isAllowedOrigin(origin)), credentials: true }),
+);
 if (env.nodeEnv !== "test") app.use(morgan(env.isProduction ? "combined" : "dev"));
 app.use(express.json({ limit: "100kb" }));
 

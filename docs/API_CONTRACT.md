@@ -40,6 +40,7 @@ optional and used for 422.
 | 404 | Record missing **or not visible to the caller** | `NOT_FOUND` |
 | 409 | Conflicts with current state | `APPOINTMENT_CONFLICT`, `INVALID_TRANSITION`, `SLOT_OVERLAP`, `NOT_VERIFIED`, `DUPLICATE_SPECIALTY` |
 | 422 | Validation failed | `VALIDATION_FAILED` |
+| 423 | Administrator sign-in locked after 4 wrong passwords (30 minutes) | `ACCOUNT_LOCKED` |
 | 429 | Rate limited | `RATE_LIMITED` |
 
 A 401 on any protected request makes the client drop the local session and show the sign-in page. A 401 from

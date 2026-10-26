@@ -588,6 +588,14 @@ export const EXTRA = {
   // ── sign in, sign up, passwords ──────────────────────────────────
   "Checking your invitation…": "আপনার আমন্ত্রণ যাচাই হচ্ছে…",
   "Confirm password": "পাসওয়ার্ড নিশ্চিত করুন",
+  "Show password": "পাসওয়ার্ড দেখুন",
+  "Hide password": "পাসওয়ার্ড লুকান",
+  "What the password needs": "পাসওয়ার্ডে যা থাকতে হবে",
+  "10 or more characters": "১০ বা তার বেশি অক্ষর",
+  "A lowercase letter": "একটি ছোট হাতের অক্ষর",
+  "A capital letter": "একটি বড় হাতের অক্ষর",
+  "A number": "একটি সংখ্যা",
+  "A symbol, such as ! or @": "একটি চিহ্ন, যেমন ! বা @",
   "Invitation links work once and expire after 48 hours. Ask the Carewell administration to send you a new one.":
     "আমন্ত্রণ লিঙ্ক একবারই কাজ করে এবং ৪৮ ঘণ্টা পর মেয়াদোত্তীর্ণ হয়। কেয়ারওয়েল প্রশাসনকে নতুন একটি পাঠাতে বলুন।",
   "Next you’ll complete your profile and upload your BMDC registration certificate. The administration checks it with the BMDC register before your profile is published.":

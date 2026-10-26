@@ -26,5 +26,11 @@ export async function issueVerificationCode(user) {
       },
     }),
   ]);
-  void sendVerificationEmail({ to: user.email, name: user.name, code, minutes: CODE_MINUTES });
+  void sendVerificationEmail({
+    to: user.email,
+    name: user.name,
+    code,
+    minutes: CODE_MINUTES,
+    language: user.language,
+  });
 }

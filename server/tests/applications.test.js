@@ -41,7 +41,7 @@ async function register() {
       name: `Dr. Applicant ${counter}`,
       email,
       phone: "+880 1711 000000",
-      password: "doctor-pass-123",
+      password: "Doctor-pass-123!",
       specialtyId: "cardiology",
       qualifications: ["MBBS"],
       experienceYears: 4,
@@ -131,7 +131,10 @@ describe("self-application", () => {
       409,
       "APPLICATION_LOCKED",
     );
-    assert.equal((await ctx.prisma.doctor.findUnique({ where: { id: doctorId } })).onboardingStatus, "submitted");
+    assert.equal(
+      (await ctx.prisma.doctor.findUnique({ where: { id: doctorId } })).onboardingStatus,
+      "submitted",
+    );
   });
 
   it("refuses an unknown certificate kind", async () => {
@@ -143,18 +146,10 @@ describe("self-application", () => {
 describe("the BMDC check and the decision", () => {
   it("approves only after a matched BMDC check, then opens the workspace", async () => {
     const { client, email, doctorId } = await submitted();
-    fails(
-      await admin.client.post(`/admin/doctors/${doctorId}/application/approve`),
-      409,
-      "BMDC_NOT_MATCHED",
-    );
+    fails(await admin.client.post(`/admin/doctors/${doctorId}/application/approve`), 409, "BMDC_NOT_MATCHED");
     fails(await check(doctorId, "mismatch"), 422, "VALIDATION_FAILED"); // a mismatch needs a note
     ok(await check(doctorId, "mismatch", "Registration number differs"));
-    fails(
-      await admin.client.post(`/admin/doctors/${doctorId}/application/approve`),
-      409,
-      "BMDC_NOT_MATCHED",
-    );
+    fails(await admin.client.post(`/admin/doctors/${doctorId}/application/approve`), 409, "BMDC_NOT_MATCHED");
 
     const checked = ok(await check(doctorId, "matched"));
     assert.equal(checked.application.bmdcCheck.result, "matched");
@@ -241,7 +236,11 @@ describe("the BMDC check and the decision", () => {
 
   it("only decides applications that are waiting", async () => {
     const { doctorId } = await register();
-    fails(await admin.client.post(`/admin/doctors/${doctorId}/application/approve`), 409, "INVALID_TRANSITION");
+    fails(
+      await admin.client.post(`/admin/doctors/${doctorId}/application/approve`),
+      409,
+      "INVALID_TRANSITION",
+    );
     fails(
       await admin.client.post(`/admin/doctors/${doctorId}/application/request-changes`, {
         note: "Please add more detail.",
@@ -264,7 +263,11 @@ describe("the BMDC check and the decision", () => {
   it("is for administrators only", async () => {
     const { client, doctorId } = await submitted();
     fails(await client.post(`/admin/doctors/${doctorId}/application/approve`), 403, "FORBIDDEN");
-    fails(await client.patch(`/admin/doctors/${doctorId}/bmdc-check`, { result: "matched" }), 403, "FORBIDDEN");
+    fails(
+      await client.patch(`/admin/doctors/${doctorId}/bmdc-check`, { result: "matched" }),
+      403,
+      "FORBIDDEN",
+    );
     fails(await ctx.client().post(`/admin/doctors/${doctorId}/application/approve`), 401, "UNAUTHENTICATED");
   });
 });
@@ -301,7 +304,9 @@ describe("invitations from the administration", () => {
     const client = ctx.client();
     assert.equal(ok(await client.get(`/auth/doctor/invitation?token=${token}`)).email, email);
     fails(await client.post("/auth/doctor/invitation/accept", { token, password: "short" }), 422);
-    const { user } = ok(await client.post("/auth/doctor/invitation/accept", { token, password: "my-new-pass-1" }));
+    const { user } = ok(
+      await client.post("/auth/doctor/invitation/accept", { token, password: "My-new-pass-1!" }),
+    );
     assert.equal(user.role, "doctor");
     assert.equal(user.emailVerified, true);
     assert.equal(user.onboardingStatus, "in_progress");
@@ -312,8 +317,11 @@ describe("invitations from the administration", () => {
     assert.equal(ok(await client.post("/doctor/application/submit")).status, "submitted");
 
     // The link works once.
-    fails(await ctx.client().post("/auth/doctor/invitation/accept", { token, password: "another-pass-1" }), 410);
-    ok(await ctx.client().post("/auth/login", { email, password: "my-new-pass-1", portal: "doctor" }));
+    fails(
+      await ctx.client().post("/auth/doctor/invitation/accept", { token, password: "Another-pass-1!" }),
+      410,
+    );
+    ok(await ctx.client().post("/auth/login", { email, password: "My-new-pass-1!", portal: "doctor" }));
   });
 
   it("refuses expired and replaced links", async () => {
@@ -330,7 +338,9 @@ describe("invitations from the administration", () => {
       data: { expiresAt: new Date(Date.now() - 1000) },
     });
     fails(
-      await ctx.client().post("/auth/doctor/invitation/accept", { token: second, password: "my-new-pass-1" }),
+      await ctx
+        .client()
+        .post("/auth/doctor/invitation/accept", { token: second, password: "My-new-pass-1!" }),
       410,
       "INVITATION_INVALID",
     );
