@@ -30,6 +30,11 @@ export const env = {
   nodeEnv,
   isProduction: nodeEnv === "production",
   port: Number(process.env.PORT ?? 3000),
+  /**
+   * How many proxies sit in front of the API, so `request.ip` is the visitor (sign-in limits are
+   * per person, not per proxy). 0 locally; 2 on Render behind the Vercel rewrite (Vercel → Render).
+   */
+  trustProxy: Number(process.env.TRUST_PROXY ?? 0),
   /** Browser origins allowed to call the API with cookies (CSRF + CORS allow-list). */
   clientOrigins: (process.env.CLIENT_ORIGINS ?? "http://localhost:5173,http://127.0.0.1:5173")
     .split(",")
