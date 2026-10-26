@@ -7,7 +7,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://carewell-34lt.onrender.com/api/$1"
+      "destination": "https://carewell-koql.onrender.com/api/$1"
     },
     {
       "source": "/(.*)",
