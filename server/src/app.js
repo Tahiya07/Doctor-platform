@@ -12,6 +12,7 @@ import { checkStorage } from "./services/storage.js";
 export const app = express();
 
 app.disable("x-powered-by");
+app.set("trust proxy", env.trustProxy);
 app.use(helmet());
 app.use(cors({ origin: env.clientOrigins, credentials: true }));
 if (env.nodeEnv !== "test") app.use(morgan(env.isProduction ? "combined" : "dev"));
