@@ -46,7 +46,9 @@ export default function SupportRequestCard({ request, onStatusChange, onReply })
             {STATUS_LABEL[request.status] ?? request.status}
           </Pill>
         </div>
-        <p className="support-request-message">{request.message}</p>
+        <p className="support-request-message" translate="no">
+          {request.message}
+        </p>
         <div className="support-request-contact">
           {request.userName && <strong>{request.userName}</strong>}
           {request.email ? (

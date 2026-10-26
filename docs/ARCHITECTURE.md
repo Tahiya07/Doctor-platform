@@ -49,6 +49,7 @@ services/                the ONLY layer that touches data
   demoData.js              fictional fixtures for the demo
 
 utils/                   pure helpers: dates.js, format.js, validation.js, forms.js, placeholders.js
+i18n/                    Bengali: bn.js + bn.extra.js + bn.server.js (the words), translate.js (rules for numbers, times and sentences), domTranslator.js (applies it to the page)
 styles/                  base.css (tokens, reset, layout) · components.css · pages.css · responsive.css
 *.test.js(x)             tests sit next to what they test; test/setup.js configures them
 ```
@@ -68,6 +69,26 @@ styles/                  base.css (tokens, reset, layout) · components.css · p
 7. **Server state is authoritative.** After a mutation, use the record the API returns.
 8. **Where things go:** a screen goes in `pages/`; anything a second screen needs becomes a component in `components/`;
    logic with React state becomes a hook in `hooks/`; shared state becomes a provider in `context/`.
+
+## Bengali (বাংলা)
+
+The language button in the top bar (and the footer) switches the whole website between English and Bengali. The choice is
+remembered in the browser. In Bengali mode:
+
+- **`i18n/domTranslator.js`** translates every piece of text on the page, and the `placeholder`, `aria-label`, `title`
+  and `alt` attributes, including text that appears later (dialogs, loaded data, toasts, messages from the server).
+  The English is remembered per node, so switching back restores it exactly, and React keeps working normally.
+- **`i18n/translate.js`** decides what a text becomes: an exact entry in the dictionary, a number or time (`৳1,100` → `৳১,১০০`,
+  `3:00 PM` → `বিকাল ৩:০০`), or a sentence pattern with a name or count in it (`14 years experience`). Names, emails and
+  anything with no Bengali entry stay as written. The dictionary files hold the words: `bn.js` (earlier screens),
+  `bn.extra.js` (the rest of the interface) and `bn.server.js` (messages the API sends).
+- **Font:** Hind Siliguri (`@fontsource/hind-siliguri`, bundled, no Google request). `<html lang>` and `data-language`
+  follow the choice, and negative letter-spacing is switched off because it breaks Bengali letters.
+- **Text people wrote** (chat messages, review comments, support messages) carries `translate="no"` and is never changed.
+
+**Adding a new screen:** write the English as usual. If a new sentence is missing in Bengali, add it to `bn.extra.js`
+(keys are the English text exactly as shown). Sentences with a name or number go in the pattern list in `translate.js`.
+`i18n/translate.test.js` shows the expected results.
 
 ## Data flow
 

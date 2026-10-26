@@ -56,7 +56,7 @@ so "Bangladeshi" here means shot in Bangladesh where the photo says so, otherwis
 
 | File | Used for | Source | Author | Licence |
 | --- | --- | --- | --- | --- |
-| `hero/hero-doctor.jpg` | Landing page (also Dr. Farzana Haque) | [Pexels](https://www.pexels.com/photo/36665076/) | see the photo page | Pexels licence |
+| `hero/hero-doctor.jpg` | Landing page | Supplied by the project owner (cropped to a 4:5 portrait) | not recorded | Confirm the right to use before publishing |
 
 ## Landing page patients
 

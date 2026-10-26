@@ -202,7 +202,7 @@ export default function ReviewsSection({ doctorId, onSummary }) {
                 {review.mine && <span className="review-mine">Your review</span>}
                 <time dateTime={review.createdAt}>{timeAgo(review.createdAt)}</time>
               </div>
-              {review.comment && <p>{review.comment}</p>}
+              {review.comment && <p translate="no">{review.comment}</p>}
               {review.mine && !editing && (
                 <div className="review-actions">
                   <button type="button" className="table-action" onClick={() => setEditing(true)}>

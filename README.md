@@ -143,6 +143,7 @@ scripts/  setup.mjs · dev.mjs
 - The website talks to the API only through `client/src/services/`. A switch (`VITE_CAREWELL_DATA_MODE`) chooses the
   real API or the in-memory demo, and the demo tests double as an executable specification of the API.
 - Patients can rate a doctor after a completed visit, everyone can add a profile photo, and messages and notifications arrive instantly over a Server-Sent Events stream (`GET /events`). Administrators manage patients (search, suspend, restore) and moderate reviews. Messages sent through the help page are also emailed to `SUPPORT_EMAIL` (the `SMTP_USER` mailbox by default).
+- The whole website can be switched to Bengali (বাংলা) with the language button in the top bar, set in the Hind Siliguri font. See "Bengali" in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how to add words.
 - Sign-in uses an HttpOnly cookie session; the database enforces the important rules (no double-booked times, only
   verified doctors can be published) so they cannot be bypassed.
 - Never run `prisma db push`. Change `server/prisma/schema.prisma`, then create a migration.

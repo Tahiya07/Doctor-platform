@@ -46,7 +46,7 @@ export default function ReviewModerationPage() {
         <span className="review-comment-cell">
           <Stars value={review.rating} size={13} />
           <br />
-          {review.comment || <em>No comment</em>}
+          {review.comment ? <span translate="no">{review.comment}</span> : <em>No comment</em>}
         </span>
       ),
     },

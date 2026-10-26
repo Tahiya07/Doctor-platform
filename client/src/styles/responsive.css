@@ -60,8 +60,8 @@
   .hero h1 {
     font-size: 61px;
   }
-  .hero-image-wrap {
-    height: 330px;
+  .hero-visual {
+    --hero-image-height: 440px;
   }
   .doctor-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -141,9 +141,12 @@
     font-size: 15px;
   }
   .hero-image-wrap {
-    width: calc(100% - 18px);
-    height: 280px;
+    width: min(100% - 18px, 340px);
+    height: auto;
     margin: 0 auto;
+  }
+  .hero-caption {
+    width: min(100% - 18px, 340px);
   }
   .hero-image,
   .hero-image-overlay {
@@ -1000,15 +1003,16 @@
   background: rgba(13, 43, 76, 0.58);
 }
 
+/* Opaque, not glass: these menus hold text to read, and they open over photos and busy pages. */
 .account-menu,
 .notification-panel {
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  background: rgba(255, 255, 255, 0.34);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-surface-elevated);
   box-shadow:
-    0 18px 40px -28px rgba(32, 57, 87, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(16px) saturate(125%);
-  -webkit-backdrop-filter: blur(16px) saturate(125%);
+    0 18px 40px -22px rgba(32, 57, 87, 0.5),
+    0 2px 6px rgba(32, 57, 87, 0.08);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 .account-menu {
   position: fixed;
@@ -1016,8 +1020,8 @@
 }
 :root[data-theme="dark"] .account-menu,
 :root[data-theme="dark"] .notification-panel {
-  border-color: rgba(190, 218, 245, 0.18);
-  background: rgba(13, 43, 76, 0.58);
+  border-color: rgba(190, 218, 245, 0.22);
+  background: var(--color-surface-elevated);
   box-shadow:
     0 20px 40px -26px rgba(0, 0, 0, 0.7),
     inset 0 1px 0 rgba(206, 231, 255, 0.1);

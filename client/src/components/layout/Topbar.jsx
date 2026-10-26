@@ -4,6 +4,7 @@ import { PATHS } from "../../constants.js";
 import { useTheme } from "../../context/ThemeContext.jsx";
 import { IconButton } from "../ui/index.js";
 import AccountMenu from "./AccountMenu.jsx";
+import LanguageSwitch from "./LanguageSwitch.jsx";
 import { routeTitle } from "./navigation.js";
 import NotificationBell from "./NotificationBell.jsx";
 
@@ -32,6 +33,7 @@ export default function Topbar({ onOpenMenu }) {
         </div>
       </div>
       <div className="command-pill glass-card-light">
+        <LanguageSwitch />
         <IconButton label={`Switch to ${nextTheme} theme`} onClick={toggleTheme}>
           {resolvedTheme === "dark" ? <Moon size={16} /> : <Sun size={16} />}
         </IconButton>

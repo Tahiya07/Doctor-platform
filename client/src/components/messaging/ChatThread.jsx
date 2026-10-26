@@ -69,7 +69,7 @@ export default function ChatThread({
       <div className="message-list" aria-live="polite" ref={listRef} onScroll={trackScroll}>
         {messages.map((message) => (
           <div className={`message-bubble ${message.isMine ? "outgoing" : ""}`} key={message.id}>
-            {message.body}
+            <span translate="no">{message.body}</span>
             {message.attachmentUrl && (
               <a href={message.attachmentUrl} target="_blank" rel="noreferrer">
                 {message.attachmentName || "Open attachment"}

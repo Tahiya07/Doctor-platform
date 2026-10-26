@@ -149,13 +149,63 @@
 :root {
   --color-glass-border-soft: rgba(37, 99, 235, 0.16);
 }
-.page-content[lang="bn"],
-.page-content[lang="bn"] button,
-.page-content[lang="bn"] input,
-.page-content[lang="bn"] select,
-.page-content[lang="bn"] textarea,
-.page-footer[lang="bn"] {
-  font-family: "Noto Sans Bengali", "Nirmala UI", sans-serif;
+/* Bengali mode: Hind Siliguri everywhere, and no negative letter-spacing or tight line-height, which break Bengali letters. */
+:root[data-language="bn"] {
+  --font-body: "Hind Siliguri", "Noto Sans Bengali", "Nirmala UI", sans-serif;
+  --font-display: "Hind Siliguri", "Noto Sans Bengali", "Nirmala UI", sans-serif;
+}
+:root[data-language="bn"] body,
+:root[data-language="bn"] button,
+:root[data-language="bn"] input,
+:root[data-language="bn"] select,
+:root[data-language="bn"] textarea {
+  font-family: var(--font-body);
+}
+:root[data-language="bn"] * {
+  letter-spacing: 0 !important;
+}
+:root[data-language="bn"] h1,
+:root[data-language="bn"] h2,
+:root[data-language="bn"] h3,
+:root[data-language="bn"] h4 {
+  line-height: 1.35;
+}
+.language-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px 0 10px;
+  color: var(--color-interactive-primary);
+  border: 1px solid var(--color-border-default);
+  border-radius: 999px;
+  background: var(--color-selected-bg);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.language-short {
+  display: none;
+}
+@media (max-width: 560px) {
+  .language-full {
+    display: none;
+  }
+  .language-short {
+    display: inline;
+  }
+  .language-switch {
+    padding: 0 9px;
+    gap: 4px;
+  }
+}
+.language-switch:hover {
+  border-color: var(--color-interactive-primary);
+}
+.language-switch:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }
 :root[data-theme="dark"] {
   --color-glass-border-soft: rgba(96, 165, 250, 0.2);

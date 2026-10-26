@@ -16,9 +16,9 @@ export default function HeroSection() {
         <h1>
           {t("Good care starts")}
           <br />
-          with{" "}
+          {t("with")}{" "}
           <em>
-            {t("with the right")}
+            {t("the right")}
             <br />
             {t("connection.")}
           </em>
@@ -31,7 +31,11 @@ export default function HeroSection() {
       </div>
       <div className="hero-visual">
         <div className="hero-image-wrap">
-          <img className="hero-image" src={assetUrl(HERO_IMAGE)} alt="A smiling doctor in a white coat" />
+          <img
+            className="hero-image"
+            src={assetUrl(HERO_IMAGE)}
+            alt="A doctor in a white coat with his arms crossed"
+          />
           <div className="hero-image-overlay" />
           <span className="image-stamp">CW—01</span>
         </div>

@@ -137,7 +137,13 @@ export default function NotificationBell() {
                       </span>
                       <span className="notification-text">
                         <strong>{item.title}</strong>
-                        {item.body && <small>{item.body}</small>}
+                        {item.body && (
+                          <small
+                            translate={item.kind === "message" || item.kind === "support" ? "no" : undefined}
+                          >
+                            {item.body}
+                          </small>
+                        )}
                         <time dateTime={item.createdAt}>{timeAgo(item.createdAt)}</time>
                       </span>
                       {!item.read && <span className="notification-unread-dot" aria-label="Unread" />}
