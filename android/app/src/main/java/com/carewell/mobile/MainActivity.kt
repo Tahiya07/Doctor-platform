@@ -680,7 +680,26 @@ class MainActivity : Activity() {
         val years=field("Experience years",android.text.InputType.TYPE_CLASS_NUMBER);years.setText(item.optString("experienceYears"));val fee=field("Fee in BDT",android.text.InputType.TYPE_CLASS_NUMBER);fee.setText(item.optString("fee"));val location=field("Practice location");location.setText(item.optString("location"))
         val facilities=field("Clinic IDs, comma separated");facilities.setText(item.optJSONArray("facilityIds")?.let{a->(0 until a.length()).joinToString(", "){a.optString(it)}}?:"")
         listOf(name,specialty,qualifications,years,fee,location,facilities).forEach{content.addView(it)}
-        content.addView(action("Save changes").apply{setOnClickListener{val qs=JSONArray();qualifications.text.toString().split(",").map{it.trim()}.filter{it.isNotEmpty()}.forEach{qs.put(it)};val fs=JSONArray();facilities.text.toString().split(",").map{it.trim()}.filter{it.isNotEmpty()}.forEach{fs.put(it)};val body=JSONObject().put("name",name.text.toString()).put("specialtyId",specialty.text.toString()).put("qualifications",qs).put("experienceYears",years.text.toString().toIntOrNull()?:0).put("fee",fee.text.toString().toIntOrNull()?:0).put("location",location.text.toString()).put("facilityIds",fs);runApi({CarewellApi.patch("/admin/doctors/${item.optString("id")}",body)}){if(it.isSuccess)loadAdminList("doctors")else content.addView(note(it.exceptionOrNull()?.message?:"Could not update doctor."))}}}})
+        content.addView(action("Save changes").apply {
+            setOnClickListener {
+                val qs = JSONArray()
+                qualifications.text.toString().split(",").map { it.trim() }.filter { it.isNotEmpty() }.forEach { qs.put(it) }
+                val fs = JSONArray()
+                facilities.text.toString().split(",").map { it.trim() }.filter { it.isNotEmpty() }.forEach { fs.put(it) }
+                val body = JSONObject()
+                    .put("name", name.text.toString())
+                    .put("specialtyId", specialty.text.toString())
+                    .put("qualifications", qs)
+                    .put("experienceYears", years.text.toString().toIntOrNull() ?: 0)
+                    .put("fee", fee.text.toString().toIntOrNull() ?: 0)
+                    .put("location", location.text.toString())
+                    .put("facilityIds", fs)
+                runApi({ CarewellApi.patch("/admin/doctors/${item.optString("id")}", body) }) { result ->
+                    if (result.isSuccess) loadAdminList("doctors")
+                    else content.addView(note(result.exceptionOrNull()?.message ?: "Could not update doctor."))
+                }
+            }
+        })
     }
 
     private fun createFacilityForm() {
