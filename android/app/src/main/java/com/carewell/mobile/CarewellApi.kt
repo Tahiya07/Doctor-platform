@@ -13,6 +13,7 @@ object CarewellApi {
     private const val BASE_URL = "https://carewell-psi.vercel.app/api/v1"
     private val cookies = CookieManager(null, CookiePolicy.ACCEPT_ALL)
     private var appContext: android.content.Context? = null
+    @Volatile private var eventsConnection: HttpURLConnection? = null
 
     @Synchronized fun init(context: android.content.Context) {
         if(appContext!=null)return
@@ -27,6 +28,43 @@ object CarewellApi {
     fun post(path: String, body: JSONObject): Any? = request("POST", path, body)
     fun patch(path: String, body: JSONObject): Any? = request("PATCH", path, body)
     fun delete(path: String): Any? = request("DELETE", path)
+
+    /** Keeps the same authenticated event stream open as the website's RealtimeProvider. */
+    fun watchEvents(keepRunning: () -> Boolean, onEvent: (String) -> Unit) {
+        while (keepRunning()) {
+            var connection: HttpURLConnection? = null
+            try {
+                val eventConnection = URL("$BASE_URL/events").openConnection() as HttpURLConnection
+                connection = eventConnection
+                eventsConnection = eventConnection
+                eventConnection.requestMethod = "GET"
+                eventConnection.connectTimeout = 15_000
+                eventConnection.readTimeout = 45_000
+                eventConnection.setRequestProperty("Accept", "text/event-stream")
+                eventConnection.setRequestProperty("Cache-Control", "no-cache")
+                cookies.getCookieStore().get(URL(BASE_URL).toURI()).joinToString("; ") { "${it.name}=${it.value}" }
+                    .takeIf { it.isNotEmpty() }?.let { eventConnection.setRequestProperty("Cookie", it) }
+                eventConnection.inputStream.bufferedReader().useLines { lines ->
+                    var data = StringBuilder()
+                    lines.forEach { line ->
+                        if (!keepRunning()) return@forEach
+                        if (line.startsWith("data:")) data.append(line.removePrefix("data:").trim())
+                        if (line.isEmpty() && data.isNotEmpty()) {
+                            onEvent(data.toString())
+                            data = StringBuilder()
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+                if (keepRunning()) try { Thread.sleep(3_000) } catch (_: InterruptedException) { return }
+            } finally {
+                connection?.disconnect()
+                if (eventsConnection === connection) eventsConnection = null
+            }
+        }
+    }
+
+    fun stopWatchingEvents() { eventsConnection?.disconnect(); eventsConnection = null }
 
     fun upload(path: String, fileName: String, mimeType: String, bytes: ByteArray, fields: Map<String,String>): Any? {
         val boundary="Carewell-${System.nanoTime()}"

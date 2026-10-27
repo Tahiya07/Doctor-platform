@@ -1,15 +1,19 @@
 package com.carewell.mobile
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.HorizontalScrollView
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -20,11 +24,15 @@ import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.net.URL
 import java.util.concurrent.Executors
 
 /** Native Carewell experience for patients, doctors and administrators. */
 class MainActivity : Activity() {
     private val worker = Executors.newSingleThreadExecutor()
+    private val imageWorker = Executors.newFixedThreadPool(3)
+    private val eventsWorker = Executors.newSingleThreadExecutor()
+    @Volatile private var eventsActive = false
     private lateinit var content: LinearLayout
     private lateinit var user: JSONObject
     private var doctors = JSONArray()
@@ -38,20 +46,33 @@ class MainActivity : Activity() {
     private var banner: String? = null
     private var uploadTarget: String? = null
     private var uploadKind = "other"
+    private var activeTab = "discover"
+    private var activeConversationId: String? = null
+    private var activeConversationTitle = ""
+    private var language = "en"
+    private var darkTheme = false
+    private val bengali by lazy { runCatching { JSONObject(assets.open("bn.json").bufferedReader().use { it.readText() }) }.getOrDefault(JSONObject()) }
+    private var appointmentFilter = "all"
+    private var appointmentCalendar = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         CarewellApi.init(this)
-        window.statusBarColor = Color.rgb(10, 96, 91)
-        window.navigationBarColor = Color.rgb(10, 96, 91)
+        val preferences = getSharedPreferences("carewell_preferences", MODE_PRIVATE)
+        language = preferences.getString("language", "en") ?: "en"
+        darkTheme = preferences.getBoolean("dark_theme", true)
+        user = JSONObject()
+        applySystemTheme()
         if(handleDeepLink(intent))return
         showLoading("Connecting to Carewell…")
         runApi({ CarewellApi.get("/auth/me") as JSONObject }) { result ->
             if (result.isSuccess) {
                 user = (result.getOrThrow() as JSONObject).optJSONObject("user") ?: JSONObject()
-                showHome("doctors")
+                startEvents()
+                showHome(homeTab())
             } else {
-                showLogin()
+                user = JSONObject()
+                showHome("discover")
             }
         }
     }
@@ -67,6 +88,15 @@ class MainActivity : Activity() {
         when {
             route.contains("reset-password") -> showResetPassword(query["token"])
             route.contains("doctor/invitation") -> showAcceptInvitation(query["token"])
+            route == "staff-1164ab636c75" -> showLogin(portal = "admin")
+            route.startsWith("doctors/") -> {
+                val id=route.removePrefix("doctors/").substringBefore('/')
+                showLoading("Loading doctor profile…")
+                runApi({CarewellApi.get("/doctors/$id") as JSONObject}) { result ->
+                    if(result.isSuccess)openDoctor(result.getOrThrow() as JSONObject)
+                    else { val root=basePage();root.addView(label("Doctor profile unavailable",22,ink,true));root.addView(note(result.exceptionOrNull()?.message?:"This profile is not available."));root.addView(action("Browse doctors").apply{setOnClickListener{showHome("doctors")}});showScrollable(root) }
+                }
+            }
             route.contains("verify-email") -> {showLoading("Sign in to verify your email.");runApi({CarewellApi.get("/auth/me") as JSONObject}){if(it.isSuccess){user=(it.getOrThrow() as JSONObject).optJSONObject("user")?:JSONObject();showVerification()}else showLogin()}}
             else -> return false
         }
@@ -83,13 +113,17 @@ class MainActivity : Activity() {
             val bytes=contentResolver.openInputStream(uri)?.use{it.readBytes()}?:throw IllegalStateException("Could not read selected file.")
             val name=contentResolver.query(uri,null,null,null,null)?.use{cursor->if(cursor.moveToFirst())cursor.getString(cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME).coerceAtLeast(0))else "certificate"}?:"certificate"
             val mime=contentResolver.getType(uri)?:MimeTypeMap.getSingleton().getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(name))?:"application/octet-stream"
+            val photo=path=="/me/photo"
+            val allowed=if(photo)listOf("image/jpeg","image/png","image/webp") else if(path.contains("/conversations/"))listOf("application/pdf","image/jpeg","image/png","image/webp","image/gif") else listOf("application/pdf","image/jpeg","image/png","image/webp")
+            require(mime in allowed){"This file type is not supported here."}
+            require(bytes.size<=if(photo)2*1024*1024 else 10*1024*1024){"The selected file is too large."}
             runApi({CarewellApi.upload(path,name,mime,bytes,if(path=="/doctor/certificates"||path.contains("/admin/doctors/"))mapOf("kind" to uploadKind) else emptyMap())}){if(it.isSuccess){when{path=="/me/photo"->{user=(it.getOrThrow() as JSONObject).optJSONObject("user")?:user;showHome("account")};path.contains("/conversations/")->content.addView(note("Attachment sent."));user.optString("role")=="doctor"->showHome("doctor_application");else->showHome("admin_verification")}}else content.addView(note(it.exceptionOrNull()?.message?:"Upload failed."))}
         } catch(error:Exception) { content.addView(note(error.message?:"Could not open selected file.")) }
     }
 
     private fun chooseCertificate(path:String) {
         uploadTarget=path
-        val picker=Intent(Intent.ACTION_OPEN_DOCUMENT).apply{addCategory(Intent.CATEGORY_OPENABLE);type="*/*";putExtra(Intent.EXTRA_MIME_TYPES,arrayOf("application/pdf","image/jpeg","image/png","image/webp"))}
+        val picker=Intent(Intent.ACTION_OPEN_DOCUMENT).apply{addCategory(Intent.CATEGORY_OPENABLE);type="*/*";putExtra(Intent.EXTRA_MIME_TYPES,arrayOf("application/pdf","image/jpeg","image/png","image/webp","image/gif"))}
         startActivityForResult(picker,300)
     }
 
@@ -101,7 +135,7 @@ class MainActivity : Activity() {
 
     private fun showAcceptInvitation(invitationToken:String?=null) {
         val root=basePage();root.addView(label("Accept doctor invitation",24,ink,true));val token=field("Invitation token from email");if(invitationToken!=null)token.setText(invitationToken);val password=field("Choose a password",android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);root.addView(token);root.addView(password)
-        root.addView(action("Accept invitation").apply{setOnClickListener{runApi({CarewellApi.post("/auth/doctor/invitation/accept",JSONObject().put("token",token.text.toString().trim()).put("password",password.text.toString())) as JSONObject}){if(it.isSuccess){user=(it.getOrThrow() as JSONObject).optJSONObject("user")?:JSONObject();showHome("doctor_application")}else root.addView(note(it.exceptionOrNull()?.message?:"Invitation could not be accepted."))}}})
+        root.addView(action("Accept invitation").apply{setOnClickListener{runApi({CarewellApi.post("/auth/doctor/invitation/accept",JSONObject().put("token",token.text.toString().trim()).put("password",password.text.toString())) as JSONObject}){if(it.isSuccess){user=(it.getOrThrow() as JSONObject).optJSONObject("user")?:JSONObject();startEvents();showHome("doctor_application")}else root.addView(note(it.exceptionOrNull()?.message?:"Invitation could not be accepted."))}}})
         showScrollable(root)
     }
 
@@ -110,7 +144,7 @@ class MainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
             setPadding(dp(28), dp(28), dp(28), dp(28))
-            setBackgroundColor(Color.rgb(245, 249, 248))
+            setBackgroundColor(if(darkTheme)Color.rgb(18,31,33) else Color.rgb(245,249,248))
         }
         root.addView(label("Carewell", 30, Color.rgb(10, 96, 91), true))
         root.addView(label(message, 16, Color.DKGRAY).apply { setPadding(0, dp(16), 0, 0) })
@@ -121,6 +155,8 @@ class MainActivity : Activity() {
         val root = basePage()
         root.addView(label("Carewell", 30, teal, true))
         root.addView(label("Care that fits your life", 16, muted).apply { setPadding(0, 0, 0, dp(24)) })
+        root.addView(action(if(language=="bn")"Switch to English" else "বাংলা / Switch to Bangla").apply { setOnClickListener { language=if(language=="bn")"en" else "bn"; getSharedPreferences("carewell_preferences",MODE_PRIVATE).edit().putString("language",language).apply(); showLogin(message,portal) } })
+        root.addView(action(if(darkTheme)"Switch to light theme" else "Switch to dark theme").apply { setOnClickListener { darkTheme=!darkTheme; getSharedPreferences("carewell_preferences",MODE_PRIVATE).edit().putBoolean("dark_theme",darkTheme).apply(); applySystemTheme(); showLogin(message,portal) } })
         if (!message.isNullOrBlank()) root.addView(note(message))
         val email = field("Email address", android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS)
         val password = field("Password", android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD)
@@ -137,18 +173,19 @@ class MainActivity : Activity() {
                 signIn.isEnabled = true
                 if (result.isSuccess) {
                     user = (result.getOrThrow() as JSONObject).optJSONObject("user") ?: JSONObject()
+                    startEvents()
                     banner = "Signed in successfully."
-                    showHome("doctors")
+                    showHome(homeTab())
                 } else showLogin(result.exceptionOrNull()?.message ?: "Sign in failed.", portal)
             }
         }
         root.addView(label("${portal.replaceFirstChar { it.uppercase() }} sign in", 14, muted)
             .apply { setPadding(0, dp(20), 0, 0) })
         if (portal == "patient") {
+            root.addView(action("Browse Carewell without signing in").apply { setOnClickListener { user = JSONObject(); showHome("discover") } })
             root.addView(action("Create a patient account").apply { setOnClickListener { showRegistration() } })
             root.addView(action("Doctor sign in").apply { setOnClickListener { showLogin(portal = "doctor") } })
             root.addView(action("Accept a doctor invitation").apply { setOnClickListener { showAcceptInvitation() } })
-            root.addView(action("Staff sign in").apply { setOnClickListener { showLogin(portal = "admin") } })
             root.addView(action("Forgot password?").apply { setOnClickListener { showForgotPassword() } })
         } else {
             root.addView(action("Patient sign in").apply { setOnClickListener { showLogin(portal = "patient") } })
@@ -230,8 +267,9 @@ class MainActivity : Activity() {
                 verify.isEnabled = true
                 if (result.isSuccess) {
                     user = (result.getOrThrow() as JSONObject).optJSONObject("user") ?: user
+                    startEvents()
                     banner = "Email verified. You can now request appointments."
-                    showHome("doctors")
+                    showHome(homeTab())
                 } else showVerification(result.exceptionOrNull()?.message ?: "Could not verify email.")
             }
         }
@@ -247,17 +285,20 @@ class MainActivity : Activity() {
     }
 
     private fun showHome(tab: String) {
+        activeTab = tab
         val page = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.rgb(245, 249, 248))
+            setBackgroundColor(if(darkTheme)Color.rgb(18,31,33) else Color.rgb(245,249,248))
         }
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(20), dp(20), dp(14))
-            setBackgroundColor(Color.WHITE)
+            setBackgroundColor(if(darkTheme)Color.rgb(28,43,45) else Color.WHITE)
         }
         header.addView(label("Carewell", 25, teal, true))
         header.addView(label("Hello, ${user.optString("name", "there")}", 14, muted))
+        header.addView(action(if(language=="bn")"Switch to English" else "বাংলা / Switch to Bangla").apply { setOnClickListener { language=if(language=="bn")"en" else "bn"; getSharedPreferences("carewell_preferences",MODE_PRIVATE).edit().putString("language",language).apply(); showHome(activeTab) } })
+        header.addView(action(if(darkTheme)"Switch to light theme" else "Switch to dark theme").apply { setOnClickListener { darkTheme=!darkTheme; getSharedPreferences("carewell_preferences",MODE_PRIVATE).edit().putBoolean("dark_theme",darkTheme).apply(); applySystemTheme(); showHome(activeTab) } })
         page.addView(header)
         val scroll = ScrollView(this)
         content = LinearLayout(this).apply {
@@ -269,21 +310,25 @@ class MainActivity : Activity() {
         val nav = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             setPadding(dp(8), dp(8), dp(8), dp(8))
-            setBackgroundColor(Color.WHITE)
+            setBackgroundColor(if(darkTheme)Color.rgb(28,43,45) else Color.WHITE)
         }
-        val menu = when (user.optString("role")) {
+        val role = user.optString("role")
+        val menu = when (role) {
             "doctor" -> listOf("doctor_dashboard" to "Practice", "doctor_application" to "Application", "doctor_availability" to "Availability", "messages" to "Messages", "notifications" to "Alerts", "account" to "Account")
             "admin" -> listOf("admin_overview" to "Overview", "admin_doctors" to "Doctors", "admin_verification" to "Verify", "admin_facilities" to "Clinics", "admin_appointments" to "Visits", "admin_patients" to "Patients", "admin_reviews" to "Reviews", "admin_specialties" to "Specialties", "admin_availability" to "Availability", "admin_support" to "Support", "admin_deactivation" to "Deactivation", "messages" to "Messages", "notifications" to "Alerts", "account" to "Account")
-            else -> listOf("doctors" to "Find care", "facilities" to "Clinics", "assistance" to "Help", "appointments" to "Visits", "messages" to "Messages", "notifications" to "Alerts", "account" to "Account")
+            "patient" -> listOf("discover" to "Discover", "doctors" to "Doctors", "favorites" to "Saved", "facilities" to "Clinics", "assistance" to "Help", "appointments" to "Visits", "messages" to "Messages", "notifications" to "Alerts", "account" to "Account")
+            else -> listOf("discover" to "Discover", "doctors" to "Doctors", "favorites" to "Saved", "facilities" to "Clinics", "assistance" to "Help", "login" to "Sign in", "signup" to "Create account", "doctor_login" to "Doctor sign in")
         }
         menu.forEach { (key, title) ->
-            val button = Button(this).apply { text = title; isAllCaps = false }
+            val button = Button(this).apply { text = translate(title); isAllCaps = false }
             nav.addView(button, LinearLayout.LayoutParams(-2, -2))
             button.setOnClickListener { showHome(key) }
         }
         page.addView(HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; addView(nav) })
         setContentView(page)
         when (tab) {
+            "discover" -> loadDiscover()
+            "favorites" -> loadDoctors(savedOnly = true)
             "appointments" -> loadAppointments()
             "account" -> showAccount()
             "facilities" -> loadFacilities()
@@ -304,67 +349,195 @@ class MainActivity : Activity() {
             "admin_availability" -> loadAvailability(true)
             "admin_support" -> loadAdminList("support")
             "admin_deactivation" -> loadAdminList("deactivation")
-            else -> if(user.optString("role")=="doctor")loadDoctorDashboard() else if(user.optString("role")=="admin")loadAdminOverview() else loadDoctors()
+            "login" -> showLogin()
+            "signup" -> showRegistration()
+            "doctor_login" -> showLogin(portal = "doctor")
+            else -> if(role=="doctor")loadDoctorDashboard() else if(role=="admin")loadAdminOverview() else loadDoctors()
         }
     }
 
-    private fun loadDoctors(search: String = "") {
+    private fun homeTab(): String = when (user.optString("role")) {
+        "doctor" -> "doctor_dashboard"
+        "admin" -> "admin_overview"
+        else -> "discover"
+    }
+
+    private fun startEvents() {
+        if (eventsActive || user.optString("role") !in listOf("patient", "doctor", "admin")) return
+        eventsActive = true
+        eventsWorker.execute {
+            CarewellApi.watchEvents({ eventsActive }) {
+                runOnUiThread {
+                    if (!eventsActive || isFinishing) return@runOnUiThread
+                    val conversation = activeConversationId
+                    if (activeTab == "messages" && conversation != null) showConversation(conversation, activeConversationTitle)
+                    else showHome(activeTab)
+                }
+            }
+        }
+    }
+
+    private fun stopEvents() { eventsActive = false; CarewellApi.stopWatchingEvents() }
+
+    private fun loadDiscover() {
         content.removeAllViews()
-        content.addView(label("Find a doctor", 22, ink, true))
+        content.addView(label("Care that fits your life", 26, ink, true))
+        content.addView(label("Find trusted doctors, compare clinics and request an appointment when you are ready.", 15, muted))
+        val search = field("Search by doctor, specialty or area")
+        content.addView(search)
+        content.addView(action("Find a doctor").apply { setOnClickListener { loadDoctors(search.text.toString()) } })
+        content.addView(action("Browse hospitals and clinics").apply { setOnClickListener { showHome("facilities") } })
+        content.addView(label("Browse specialties", 19, ink, true))
+        val specialtyList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        content.addView(specialtyList)
+        runApi({ CarewellApi.get("/specialties") as JSONArray }) { result ->
+            if (result.isSuccess) {
+                val items = result.getOrThrow() as JSONArray
+                for (i in 0 until minOf(items.length(), 20)) {
+                    val item = items.getJSONObject(i)
+                    specialtyList.addView(action(item.optString("name")).apply {
+                        setOnClickListener { loadDoctors(specialtyId = item.optString("id")) }
+                    })
+                }
+            }
+        }
+        content.addView(label("Featured doctors", 19, ink, true))
+        runApi({ CarewellApi.get("/doctors") as JSONArray }) { result ->
+            if (result.isFailure) { content.addView(note(result.exceptionOrNull()?.message ?: "Could not load doctors.")); return@runApi }
+            val items = result.getOrThrow() as JSONArray
+            for (i in 0 until minOf(items.length(), 6)) content.addView(doctorCard(items.getJSONObject(i)))
+            if (items.length() == 0) content.addView(note("No published doctors are available yet."))
+        }
+        content.addView(label("How Carewell works", 19, ink, true))
+        content.addView(note("1. Find a doctor and choose a clinic.  2. Select an available time.  3. Send a request and follow its status in Visits."))
+        content.addView(action("Contact Carewell support").apply { setOnClickListener { showHome("assistance") } })
+    }
+
+    private fun loadDoctors(search: String = "", specialtyId: String = "", savedOnly: Boolean = false, location: String = "") {
+        content.removeAllViews()
+        content.addView(label(if (savedOnly) "Saved doctors" else "Find a doctor", 22, ink, true))
+        if (savedOnly) content.addView(note("Your saved doctors are stored on this device."))
         val query = field("Doctor, specialty, or location")
-        val specialty=field("Optional specialty ID");val location=field("Optional city or area");val maxFee=field("Maximum fee in BDT",android.text.InputType.TYPE_CLASS_NUMBER)
+        val specialty=field("Selected specialty ID"); specialty.setText(specialtyId)
+        val locationFilter=field("City or area"); locationFilter.setText(location)
+        val maxFee=field("Maximum fee in BDT",android.text.InputType.TYPE_CLASS_NUMBER)
+        val minExperience=field("Minimum experience in years",android.text.InputType.TYPE_CLASS_NUMBER)
+        val language=field("Language spoken (optional)")
+        val availability=field("Available: Today, Tomorrow or This week")
+        val sort=field("Sort: recommended, fee-low, experience or rating")
+        val verified=CheckBox(this).apply { text=translate("Platform verified only") }
         query.setText(search)
         val searchButton = action("Search")
         content.addView(query)
-        content.addView(specialty);content.addView(location);content.addView(maxFee)
+        content.addView(specialty);content.addView(locationFilter);content.addView(maxFee);content.addView(minExperience);content.addView(language);content.addView(availability);content.addView(verified);content.addView(sort)
         content.addView(searchButton)
         val results = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        content.addView(results)
         fun request() {
             results.removeAllViews()
             results.addView(label("Loading doctors…", 15, muted))
-            runApi({ CarewellApi.get(CarewellApi.query("/doctors", mapOf("query" to query.text.toString().trim(),"specialty" to specialty.text.toString().trim(),"location" to location.text.toString().trim(),"maxFee" to maxFee.text.toString().trim()))) as JSONArray }) { response ->
+            runApi({ CarewellApi.get(CarewellApi.query("/doctors", mapOf("query" to query.text.toString().trim(),"specialty" to specialty.text.toString().trim(),"location" to locationFilter.text.toString().trim(),"maxFee" to maxFee.text.toString().trim(),"available" to availability.text.toString().trim(),"verified" to if(verified.isChecked)"true" else ""))) as JSONArray }) { response ->
                 results.removeAllViews()
                 if (response.isFailure) {
                     results.addView(note(response.exceptionOrNull()?.message ?: "Could not load doctors."))
                     return@runApi
                 }
                 doctors = response.getOrThrow() as JSONArray
-                if (doctors.length() == 0) results.addView(label("No doctors matched. Try another search.", 15, muted))
-                for (i in 0 until doctors.length()) {
-                    val doctor = doctors.getJSONObject(i)
-                    val card = card()
-                    card.addView(label(doctor.optString("name"), 18, ink, true))
-                    card.addView(label("${doctor.optString("specialty")} · ${doctor.optInt("experienceYears")} years' experience", 14, muted))
-                    card.addView(label("${doctor.optString("location")} · BDT ${doctor.optInt("fee")}", 14, muted))
-                    card.addView(label("Next available: ${doctor.optString("nextAvailable", "To be scheduled")}", 14, teal))
-                    val open = action("View doctor and times")
-                    card.addView(open)
-                    open.setOnClickListener { openDoctor(doctor) }
-                    results.addView(card)
+                val saved = savedDoctorIds()
+                val minYears = minExperience.text.toString().toIntOrNull() ?: 0
+                val lang = language.text.toString().trim().lowercase(Locale.ROOT)
+                val matches = (0 until doctors.length()).map { doctors.getJSONObject(it) }
+                    .filter { it.optInt("experienceYears") >= minYears }
+                    .filter { d -> lang.isBlank() || (d.optJSONArray("languages") ?: JSONArray()).let { a -> (0 until a.length()).any { a.optString(it).lowercase(Locale.ROOT).contains(lang) } } }
+                    .filter { !savedOnly || saved.contains(it.optString("id")) }
+                    .let { list -> when(sort.text.toString().trim().lowercase(Locale.ROOT)) {
+                        "fee-low" -> list.sortedBy { it.optInt("fee") }
+                        "experience" -> list.sortedByDescending { it.optInt("experienceYears") }
+                        "rating" -> list.sortedByDescending { it.optDouble("rating") }
+                        else -> list
+                    } }
+                if (matches.isEmpty()) results.addView(label(if(savedOnly)"No saved doctors yet. Save a doctor from their profile." else "No doctors matched. Try another search.", 15, muted))
+                matches.forEach { results.addView(doctorCard(it)) }
+            }
+        }
+        content.addView(label("Choose a specialty",16,ink,true))
+        val specialtyChoices=LinearLayout(this).apply { orientation=LinearLayout.HORIZONTAL }
+        content.addView(HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled=false; addView(specialtyChoices) })
+        runApi({CarewellApi.get("/specialties") as JSONArray}) { result ->
+            if(result.isSuccess) {
+                val items=result.getOrThrow() as JSONArray
+                for(i in 0 until items.length()) {
+                    val item=items.getJSONObject(i)
+                    specialtyChoices.addView(action(item.optString("name")).apply { setOnClickListener { specialty.setText(item.optString("id")); request() } })
                 }
             }
         }
+        content.addView(results)
         searchButton.setOnClickListener { request() }
         request()
     }
 
-    private fun loadFacilities() {
+    private fun savedDoctorIds(): MutableSet<String> = try {
+        val values = JSONArray(getSharedPreferences("carewell_favorites", MODE_PRIVATE).getString("ids", "[]"))
+        (0 until values.length()).map { values.optString(it) }.filter { it.isNotBlank() }.toMutableSet()
+    } catch (_: Exception) { mutableSetOf() }
+
+    private fun doctorCard(doctor: JSONObject): LinearLayout {
+        val box = card()
+        if(doctor.optString("image").isNotBlank()) box.addView(remoteImage(doctor.optString("image")))
+        box.addView(label(doctor.optString("name"), 18, ink, true))
+        box.addView(label("${doctor.optString("specialty")} · ${doctor.optInt("experienceYears")} years' experience", 14, muted))
+        box.addView(label("${doctor.optString("location")} · BDT ${doctor.optInt("fee")}", 14, muted))
+        val languages = doctor.optJSONArray("languages") ?: JSONArray()
+        if (languages.length() > 0) box.addView(label("Languages: ${(0 until languages.length()).joinToString(", ") { languages.optString(it) }}", 14, muted))
+        box.addView(label("${doctor.optDouble("rating")} ★ · ${doctor.optInt("reviewCount")} reviews · ${doctor.optString("nextAvailable", "To be scheduled")}", 14, teal))
+        val saved = savedDoctorIds()
+        box.addView(action(if(saved.contains(doctor.optString("id")))"♥  Saved doctor" else "♡  Save doctor").apply {
+            setOnClickListener {
+                val id = doctor.optString("id")
+                if(!saved.add(id)) saved.remove(id)
+                val values = JSONArray(); saved.forEach { values.put(it) }
+                getSharedPreferences("carewell_favorites", MODE_PRIVATE).edit().putString("ids", values.toString()).apply()
+                if(activeTab=="favorites") loadDoctors(savedOnly=true) else text=if(saved.contains(id))"♥  Saved doctor" else "♡  Save doctor"
+            }
+        })
+        box.addView(action("View profile, reviews and appointment times").apply { setOnClickListener { openDoctor(doctor) } })
+        return box
+    }
+
+    private fun loadFacilities(filterQuery: String = "", filterType: String = "all") {
         content.removeAllViews()
         content.addView(label("Clinics and hospitals", 22, ink, true))
+        val query = field("Search by clinic or area"); query.setText(filterQuery); content.addView(query)
+        val kind = field("Type: all, clinic or hospital"); kind.setText(filterType); content.addView(kind)
+        content.addView(action("Search locations").apply { setOnClickListener { loadFacilities(query.text.toString(), kind.text.toString()) } })
         runApi({ CarewellApi.get("/clinics") as JSONArray }) { result ->
             if (result.isFailure) { content.addView(note(result.exceptionOrNull()?.message ?: "Could not load clinics.")); return@runApi }
             val items = result.getOrThrow() as JSONArray
-            if (items.length() == 0) content.addView(note("No active facilities are available."))
+            val term = filterQuery.trim().lowercase(Locale.ROOT)
+            val type = filterType.trim().lowercase(Locale.ROOT)
+            var count = 0
             for (i in 0 until items.length()) {
                 val item = items.getJSONObject(i)
+                val searchable = "${item.optString("name")} ${item.optString("area")} ${item.optString("city")}".lowercase(Locale.ROOT)
+                if (type !in listOf("", "all") && !item.optString("type").equals(type, true)) continue
+                if (!searchable.contains(term)) continue
+                count++
                 val box = card()
+                if(item.optString("image").isNotBlank()) box.addView(remoteImage(item.optString("image")))
                 box.addView(label(item.optString("name"), 18, ink, true))
                 box.addView(label("${item.optString("type").replaceFirstChar { it.uppercase() }} · ${item.optString("area")}, ${item.optString("city")}", 14, muted))
                 box.addView(label(item.optString("address"), 14, muted))
                 box.addView(label(item.optString("phone"), 14, teal))
+                box.addView(action("View doctors at this location").apply { setOnClickListener { loadDoctors(location = item.optString("name")) } })
+                box.addView(action("Open directions in Maps").apply {
+                    setOnClickListener {
+                        val place = Uri.encode("${item.optString("address")}, ${item.optString("area")}, ${item.optString("city")}")
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=$place")))
+                    }
+                })
                 content.addView(box)
             }
+            if (count == 0) content.addView(note("No clinics or hospitals match those filters."))
         }
     }
 
@@ -389,6 +562,7 @@ class MainActivity : Activity() {
     }
 
     private fun loadConversations() {
+        activeConversationId = null
         content.removeAllViews()
         content.addView(label("Messages", 22, ink, true))
         runApi({ CarewellApi.get("/conversations") as JSONArray }) { result ->
@@ -413,6 +587,8 @@ class MainActivity : Activity() {
     }
 
     private fun showConversation(id: String, title: String) {
+        activeConversationId = id
+        activeConversationTitle = title
         content.removeAllViews()
         content.addView(action("‹  Back to messages").apply { setOnClickListener { showHome("messages") } })
         content.addView(label(title, 21, ink, true))
@@ -573,10 +749,41 @@ class MainActivity : Activity() {
             for (i in 0 until slots.length()) {
                 val slot=slots.getJSONObject(i); val row=card()
                 row.addView(label("${slot.optString("date")} · ${slot.optString("startTime")}–${slot.optString("endTime")} · ${slot.optString("status")}",15,ink))
+                val scope = if(admin)"/admin" else "/doctor"
+                row.addView(action(if(slot.optString("status")=="unavailable")"Unblock slot" else "Block slot").apply {
+                    setOnClickListener {
+                        val status=if(slot.optString("status")=="unavailable")"available" else "unavailable"
+                        runApi({CarewellApi.patch("$scope/availability/${slot.optString("id")}",JSONObject().put("status",status))}) { refreshAvailability(list,path,admin) }
+                    }
+                })
+                row.addView(action("Edit slot").apply { setOnClickListener { editAvailability(slot,list,path,admin) } })
                 row.addView(action("Remove slot").apply { setOnClickListener { runApi({ CarewellApi.delete("${if(admin) "/admin" else "/doctor"}/availability/${slot.optString("id")}") }) { refreshAvailability(list,path,admin) } } })
                 list.addView(row)
             }
         }
+    }
+
+    private fun editAvailability(slot:JSONObject,list:LinearLayout,path:String,admin:Boolean) {
+        content.removeAllViews()
+        content.addView(action("‹  Back to availability").apply { setOnClickListener { showHome(if(admin)"admin_availability" else "doctor_availability") } })
+        content.addView(label("Edit availability slot",22,ink,true))
+        val date=field("Date (YYYY-MM-DD)");date.setText(slot.optString("date"))
+        val start=field("Start time (HH:mm)");start.setText(slot.optString("startTime"))
+        val end=field("End time (HH:mm)");end.setText(slot.optString("endTime"))
+        content.addView(date);content.addView(start);content.addView(end)
+        content.addView(action("Save slot changes").apply {
+            setOnClickListener {
+                val body=JSONObject().put("date",date.text.toString().trim()).put("startTime",start.text.toString().trim()).put("endTime",end.text.toString().trim())
+                runApi({CarewellApi.patch("${if(admin)"/admin" else "/doctor"}/availability/${slot.optString("id")}",body)}) { result ->
+                    if(result.isSuccess) {
+                        content.removeAllViews()
+                        content.addView(action("‹  Back to availability").apply { setOnClickListener { showHome(if(admin)"admin_availability" else "doctor_availability") } })
+                        content.addView(list)
+                        refreshAvailability(list,path,admin)
+                    } else content.addView(note(result.exceptionOrNull()?.message?:"Could not update slot."))
+                }
+            }
+        })
     }
 
     private fun loadAdminOverview() {
@@ -589,15 +796,21 @@ class MainActivity : Activity() {
         content.addView(label("Choose a section in the navigation bar to review or update records.",14,muted))
     }
 
-    private fun loadAdminList(section: String) {
+    private fun loadAdminList(section: String, searchQuery: String = "", patientStatus: String = "") {
         content.removeAllViews()
         val titles = mapOf("doctors" to "Doctor management", "verification" to "Verify applications", "facilities" to "Clinics and hospitals", "appointments" to "Appointment management", "patients" to "Patient management", "reviews" to "Review moderation", "specialties" to "Specialty management", "support" to "Support requests", "deactivation" to "Deactivation requests")
         content.addView(label(titles[section] ?: section,22,ink,true))
+        if(section=="patients") {
+            val query=field("Search patients by name or email");query.setText(searchQuery)
+            val status=field("Status: all, active or suspended");status.setText(patientStatus.ifBlank { "all" })
+            content.addView(query);content.addView(status)
+            content.addView(action("Search patients").apply { setOnClickListener { loadAdminList("patients",query.text.toString().trim(),status.text.toString().trim()) } })
+        }
         val path = when(section) {
             "doctors","verification" -> "/admin/doctors"
             "facilities" -> "/admin/clinics"
             "appointments" -> "/admin/appointments"
-            "patients" -> "/admin/patients"
+            "patients" -> CarewellApi.query("/admin/patients",mapOf("query" to searchQuery,"status" to patientStatus.takeIf { it!="all" }.orEmpty()))
             "reviews" -> "/admin/reviews"
             "specialties" -> "/admin/specialties"
             "support" -> "/admin/support-requests"
@@ -633,10 +846,18 @@ class MainActivity : Activity() {
         when(section) {
             "doctors" -> {
                 box.addView(action("Edit doctor profile").apply{setOnClickListener{editAdminDoctor(item)}})
+                box.addView(action("Set verification status").apply {
+                    setOnClickListener {
+                        simpleInput("Enter pending, verified, rejected or suspended") { status ->
+                            if(status !in listOf("pending","verified","rejected","suspended")) box.addView(note("Choose one of the listed verification statuses."))
+                            else runApi({CarewellApi.patch("/admin/doctors/$id/verification",JSONObject().put("status",status))}) { result -> if(result.isSuccess)loadAdminList(section) else box.addView(note(result.exceptionOrNull()?.message?:"Could not update verification.")) }
+                        }
+                    }
+                })
                 box.addView(action("Resend invitation").apply { setOnClickListener { runApi({ CarewellApi.post("/admin/doctors/$id/invitation",JSONObject()) }) { if(it.isSuccess) loadAdminList(section) else box.addView(note(it.exceptionOrNull()?.message ?: "Failed.")) } } })
                 box.addView(action("Upload BMDC certificate for doctor").apply{setOnClickListener{uploadKind="bmdc";chooseCertificate("/admin/doctors/$id/certificates")}})
-                box.addView(action("Deactivate doctor account").apply{setOnClickListener{runApi({CarewellApi.post("/admin/doctors/$id/deactivation",JSONObject())}){loadAdminList(section)}}})
-                box.addView(action("Toggle publication").apply { setOnClickListener { val value=if(item.optString("publicationStatus")=="published") "unpublished" else "published"; runApi({ CarewellApi.patch("/admin/doctors/$id/publication",JSONObject().put("status",value)) }) { loadAdminList(section) } } })
+                box.addView(action("Deactivate doctor account").apply{setOnClickListener{confirmAction("Deactivate this doctor?","Their profile will be removed from the public directory."){runApi({CarewellApi.post("/admin/doctors/$id/deactivation",JSONObject())}){loadAdminList(section)}}}})
+                box.addView(action(if(item.optString("publicationStatus")=="published")"Unpublish doctor" else "Publish doctor").apply { setOnClickListener { val value=if(item.optString("publicationStatus")=="published") "unpublished" else "published"; confirmAction(if(value=="published")"Publish this doctor?" else "Unpublish this doctor?","This changes whether patients can find the profile."){runApi({ CarewellApi.patch("/admin/doctors/$id/publication",JSONObject().put("status",value)) }) { result -> if(result.isSuccess)loadAdminList(section) else box.addView(note(result.exceptionOrNull()?.message?:"Could not update publication.")) } } } })
             }
             "verification" -> {
                 box.addView(action("Upload BMDC certificate for doctor").apply{setOnClickListener{uploadKind="bmdc";chooseCertificate("/admin/doctors/$id/certificates")}})
@@ -646,10 +867,13 @@ class MainActivity : Activity() {
                 box.addView(action("Request changes").apply { setOnClickListener { simpleInput("What should the doctor change?") { note -> runApi({ CarewellApi.post("/admin/doctors/$id/application/request-changes",JSONObject().put("note",note)) }) { loadAdminList(section) } } } })
                 box.addView(action("Reject application").apply { setOnClickListener { simpleInput("Reason for rejection") { note -> runApi({ CarewellApi.post("/admin/doctors/$id/application/reject",JSONObject().put("note",note)) }) { loadAdminList(section) } } } })
             }
-            "facilities" -> box.addView(action("Deactivate facility").apply { setOnClickListener { runApi({ CarewellApi.post("/admin/clinics/$id/deactivation",JSONObject()) }) { loadAdminList(section) } } })
+            "facilities" -> {
+                box.addView(action("Edit facility").apply { setOnClickListener { editFacilityForm(item) } })
+                if(item.optBoolean("active",true)) box.addView(action("Deactivate facility").apply { setOnClickListener { confirmAction("Deactivate this facility?","Patients will no longer see it when booking."){runApi({ CarewellApi.post("/admin/clinics/$id/deactivation",JSONObject()) }) { loadAdminList(section) }} } })
+            }
             "appointments" -> when(item.optString("status")) { "pending" -> {box.addView(action("Accept appointment").apply { setOnClickListener { setAdminAppointment(id,"accepted") } });box.addView(action("Reject appointment").apply{setOnClickListener{setAdminAppointment(id,"rejected")}});box.addView(action("Cancel appointment").apply { setOnClickListener { setAdminAppointment(id,"cancelled") } })};"accepted" -> {box.addView(action("Mark completed").apply{setOnClickListener{setAdminAppointment(id,"completed")}});box.addView(action("Cancel appointment").apply{setOnClickListener{setAdminAppointment(id,"cancelled")}})} }
-            "patients" -> box.addView(action(if(item.optString("accountStatus")=="suspended") "Restore patient" else "Suspend patient").apply { val status=if(item.optString("accountStatus")=="suspended") "active" else "suspended"; setOnClickListener { runApi({ CarewellApi.patch("/admin/patients/$id/status",JSONObject().put("status",status)) }) { loadAdminList(section) } } })
-            "reviews" -> box.addView(action(if(item.optString("status")=="hidden") "Restore review" else "Hide review").apply { val status=if(item.optString("status")=="hidden") "visible" else "hidden"; setOnClickListener { runApi({ CarewellApi.patch("/admin/reviews/$id",JSONObject().put("status",status)) }) { loadAdminList(section) } } })
+            "patients" -> box.addView(action(if(item.optString("accountStatus")=="suspended") "Restore patient" else "Suspend patient").apply { val status=if(item.optString("accountStatus")=="suspended") "active" else "suspended"; setOnClickListener { confirmAction(if(status=="active")"Restore this patient?" else "Suspend this patient?","This changes the patient's ability to sign in."){runApi({ CarewellApi.patch("/admin/patients/$id/status",JSONObject().put("status",status)) }) { loadAdminList(section) }} } })
+            "reviews" -> box.addView(action(if(item.optString("status")=="hidden") "Restore review" else "Hide review").apply { val status=if(item.optString("status")=="hidden") "visible" else "hidden"; setOnClickListener { confirmAction(if(status=="hidden")"Hide this review?" else "Restore this review?","This changes whether the review is shown publicly."){runApi({ CarewellApi.patch("/admin/reviews/$id",JSONObject().put("status",status)) }) { loadAdminList(section) }} } })
             "specialties" -> box.addView(action("Toggle active").apply { setOnClickListener { runApi({ CarewellApi.patch("/admin/specialties/$id",JSONObject().put("active",!item.optBoolean("active",true))) }) { loadAdminList(section) } } })
             "support" -> { box.addView(action("Mark in progress").apply{setOnClickListener{runApi({CarewellApi.patch("/admin/support-requests/$id",JSONObject().put("status","in_progress"))}){loadAdminList(section)}}});box.addView(action("Mark resolved").apply { setOnClickListener { runApi({ CarewellApi.patch("/admin/support-requests/$id",JSONObject().put("status","resolved")) }) { loadAdminList(section) } } }); box.addView(action("Reply").apply { setOnClickListener { simpleInput("Reply to this request") { reply -> runApi({ CarewellApi.post("/admin/support-requests/$id/reply",JSONObject().put("message",reply)) }) { loadAdminList(section) } } } }) }
             "deactivation" -> { box.addView(action("Approve deactivation").apply { setOnClickListener { runApi({ CarewellApi.post("/admin/deactivation-requests/$id/approve",JSONObject()) }) { loadAdminList(section) } } }); box.addView(action("Decline deactivation").apply { setOnClickListener { runApi({ CarewellApi.post("/admin/deactivation-requests/$id/decline",JSONObject()) }) { loadAdminList(section) } } }) }
@@ -709,6 +933,23 @@ class MainActivity : Activity() {
         content.addView(action("Save facility").apply{setOnClickListener{val body=JSONObject().put("name",name.text.toString()).put("type",type.text.toString()).put("address",address.text.toString()).put("area",area.text.toString()).put("city",city.text.toString()).put("phone",phone.text.toString());runApi({CarewellApi.post("/admin/clinics",body)}){if(it.isSuccess)loadAdminList("facilities")else content.addView(note(it.exceptionOrNull()?.message?:"Could not add facility."))}}})
     }
 
+    private fun editFacilityForm(item:JSONObject) {
+        content.removeAllViews();content.addView(label("Edit clinic or hospital",22,ink,true))
+        val name=field("Name");name.setText(item.optString("name"))
+        val type=field("Type: clinic or hospital");type.setText(item.optString("type"))
+        val address=field("Address");address.setText(item.optString("address"))
+        val area=field("Area");area.setText(item.optString("area"))
+        val city=field("City");city.setText(item.optString("city"))
+        val phone=field("Phone");phone.setText(item.optString("phone"))
+        listOf(name,type,address,area,city,phone).forEach{content.addView(it)}
+        content.addView(action("Save facility changes").apply {
+            setOnClickListener {
+                val body=JSONObject().put("name",name.text.toString().trim()).put("type",type.text.toString().trim()).put("address",address.text.toString().trim()).put("area",area.text.toString().trim()).put("city",city.text.toString().trim()).put("phone",phone.text.toString().trim())
+                runApi({CarewellApi.patch("/admin/clinics/${item.optString("id")}",body)}) { result -> if(result.isSuccess)loadAdminList("facilities") else content.addView(note(result.exceptionOrNull()?.message?:"Could not update facility.")) }
+            }
+        })
+    }
+
     private fun createSpecialtyForm() {
         content.removeAllViews(); content.addView(label("Add specialty",22,ink,true)); val name=field("Specialty name"); val slug=field("URL slug"); val description=field("Description"); content.addView(name);content.addView(slug);content.addView(description)
         content.addView(action("Save specialty").apply{setOnClickListener{runApi({CarewellApi.post("/admin/specialties",JSONObject().put("name",name.text.toString()).put("slug",slug.text.toString()).put("description",description.text.toString()))}){if(it.isSuccess)loadAdminList("specialties")else content.addView(note(it.exceptionOrNull()?.message?:"Could not save specialty."))}}})
@@ -718,11 +959,15 @@ class MainActivity : Activity() {
         selectedDoctor = doctor
         content.removeAllViews()
         content.addView(action("‹  Back to doctors").apply { setOnClickListener { showHome("doctors") } })
+        if(doctor.optString("image").isNotBlank()) content.addView(remoteImage(doctor.optString("image")))
         content.addView(label(doctor.optString("name"), 24, ink, true))
         content.addView(label(doctor.optString("specialty"), 17, teal))
         content.addView(label(doctor.optString("qualifications"), 14, muted))
         content.addView(label("${doctor.optInt("experienceYears")} years' experience · BDT ${doctor.optInt("fee")}", 15, ink))
         content.addView(label("${doctor.optDouble("rating", 0.0)} ★ · ${doctor.optInt("reviewCount")} reviews", 14, muted))
+        val languages = doctor.optJSONArray("languages") ?: JSONArray()
+        if (languages.length() > 0) content.addView(label("Languages: ${(0 until languages.length()).joinToString(", ") { languages.optString(it) }}", 14, muted))
+        content.addView(label("${doctor.optInt("completedVisits")} completed visits · ${doctor.optString("verificationStatus")}", 14, muted))
         content.addView(action("Read reviews").apply{setOnClickListener{loadDoctorReviews(doctor)}})
         val places = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         content.addView(label("Choose a clinic", 19, ink, true))
@@ -768,7 +1013,7 @@ class MainActivity : Activity() {
                             })
                         }
                     })
-                    box.addView(action("Delete my review").apply { setOnClickListener { runApi({CarewellApi.delete("/reviews/${review.optString("id")}")}) { loadDoctorReviews(doctor) } } })
+                    box.addView(action("Delete my review").apply { setOnClickListener { confirmAction("Delete your review?","This cannot be undone."){runApi({CarewellApi.delete("/reviews/${review.optString("id")}")}) { loadDoctorReviews(doctor) }} } })
                 }
                 content.addView(box)
             }
@@ -782,6 +1027,14 @@ class MainActivity : Activity() {
     }
 
     private fun showBookingDate(doctor: JSONObject, clinic: JSONObject) {
+        if (user.optString("role") != "patient") {
+            showLogin(message = if (user.optString("role").isBlank()) "Sign in or create a patient account to request a visit." else "Only patient accounts can request appointments.")
+            return
+        }
+        if (!user.optBoolean("emailVerified", false)) {
+            showVerification("Verify your email before requesting an appointment.")
+            return
+        }
         content.removeAllViews()
         content.addView(action("‹  Back to doctor").apply { setOnClickListener { openDoctor(doctor) } })
         content.addView(label("Request an appointment", 22, ink, true))
@@ -855,15 +1108,33 @@ class MainActivity : Activity() {
         content.removeAllViews()
         content.addView(label("Your appointments", 22, ink, true))
         content.addView(label("Appointment requests and their latest status.", 14, muted))
+        val filters = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        listOf("all" to "All", "upcoming" to "Upcoming", "completed" to "Completed", "cancelled" to "Cancelled", "rejected" to "Rejected").forEach { (key,title) ->
+            filters.addView(action(title).apply { setOnClickListener { appointmentFilter=key; showHome("appointments") } })
+        }
+        content.addView(HorizontalScrollView(this).apply { addView(filters) })
+        content.addView(action(if(appointmentCalendar)"Switch to list" else "Switch to calendar").apply { setOnClickListener { appointmentCalendar=!appointmentCalendar; showHome("appointments") } })
+        val results = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        content.addView(results)
         runApi({ CarewellApi.get("/appointments") as JSONArray }) { result ->
             if (result.isFailure) {
-                content.addView(note(result.exceptionOrNull()?.message ?: "Could not load appointments."))
+                results.addView(note(result.exceptionOrNull()?.message ?: "Could not load appointments."))
                 return@runApi
             }
             val visits = result.getOrThrow() as JSONArray
-            if (visits.length() == 0) content.addView(note("No appointment requests yet. Find a doctor to get started."))
-            for (i in 0 until visits.length()) {
-                val visit = visits.getJSONObject(i)
+            val all = (0 until visits.length()).map { visits.getJSONObject(it) }.sortedBy { it.optString("date") + it.optString("time") }
+            val visible = all.filter { visit -> when(appointmentFilter) {
+                "upcoming" -> visit.optString("status") in listOf("pending","accepted")
+                "completed","cancelled","rejected" -> visit.optString("status")==appointmentFilter
+                else -> true
+            } }
+            if (visible.isEmpty()) results.addView(note(if(all.isEmpty())"No appointment requests yet. Find a doctor to get started." else "No visits match this filter."))
+            var lastDate = ""
+            for (visit in visible) {
+                if (appointmentCalendar && lastDate != visit.optString("date")) {
+                    lastDate = visit.optString("date")
+                    results.addView(label(lastDate,18,teal,true))
+                }
                 val doctor = visit.optJSONObject("doctor") ?: JSONObject()
                 val facility = visit.optJSONObject("facility") ?: JSONObject()
                 val card = card()
@@ -874,15 +1145,18 @@ class MainActivity : Activity() {
                 card.addView(label("Status: ${visit.optString("status").replaceFirstChar { it.uppercase() }}", 15, ink))
                 if (visit.optString("status") in listOf("pending", "accepted")) {
                     val cancel = action("Cancel request")
-                    card.addView(cancel)
-                    cancel.setOnClickListener {
-                        cancel.isEnabled = false
-                        runApi({ CarewellApi.patch("/appointment-requests/${visit.optString("id")}", JSONObject().put("status", "cancelled")) }) {
-                            if (it.isSuccess) showHome("appointments") else cancel.isEnabled = true
+                    card.addView(cancel.apply {
+                        setOnClickListener {
+                            confirmAction("Cancel this request?","The doctor will be notified.") {
+                                cancel.isEnabled = false
+                                runApi({ CarewellApi.patch("/appointment-requests/${visit.optString("id")}", JSONObject().put("status", "cancelled")) }) {
+                                    if (it.isSuccess) showHome("appointments") else cancel.isEnabled = true
+                                }
+                            }
                         }
-                    }
+                    })
                 }
-                content.addView(card)
+                results.addView(card)
             }
         }
     }
@@ -890,6 +1164,8 @@ class MainActivity : Activity() {
     private fun showAccount() {
         content.removeAllViews()
         content.addView(label("Your account", 22, ink, true))
+        if(user.optString("role")=="patient") loadPatientDashboard()
+        if(user.optString("photoUrl").isNotBlank()) content.addView(remoteImage(user.optString("photoUrl"),dp(120)))
         content.addView(action("Update profile photo").apply{setOnClickListener{chooseImage("/me/photo")}})
         content.addView(action("Remove profile photo").apply{setOnClickListener{runApi({CarewellApi.delete("/me/photo") as JSONObject}){if(it.isSuccess){user=(it.getOrThrow() as JSONObject).optJSONObject("user")?:user;showHome("account")}else content.addView(note(it.exceptionOrNull()?.message?:"Could not remove photo."))}}})
         val name=field("Full name");name.setText(user.optString("name"));val phone=field("Phone number",android.text.InputType.TYPE_CLASS_PHONE);phone.setText(user.optString("phone"));content.addView(name);content.addView(phone)
@@ -921,9 +1197,39 @@ class MainActivity : Activity() {
         val logout = action("Sign out")
         content.addView(logout)
         logout.setOnClickListener {
+            stopEvents()
             runApi({ CarewellApi.post("/auth/logout", JSONObject()) }) {
                 user = JSONObject()
-                showLogin(if (it.isSuccess) null else it.exceptionOrNull()?.message)
+                showHome("discover")
+            }
+        }
+    }
+
+    private fun loadPatientDashboard() {
+        val summary=card()
+        content.addView(summary,1)
+        summary.addView(label("Welcome back, ${user.optString("name", "there").substringBefore(' ')}",20,ink,true))
+        runApi({
+            val visits=CarewellApi.get("/appointments") as JSONArray
+            val conversations=CarewellApi.get("/conversations") as JSONArray
+            Pair(visits,conversations)
+        }) { result ->
+            if(result.isFailure){summary.addView(note(result.exceptionOrNull()?.message?:"Your care summary is unavailable."));return@runApi}
+            @Suppress("UNCHECKED_CAST")
+            val (visits,conversations)=result.getOrThrow() as Pair<JSONArray,JSONArray>
+            val items=(0 until visits.length()).map{visits.getJSONObject(it)}
+            val upcoming=items.filter{it.optString("date")>=today()&&it.optString("status")=="accepted"}.sortedBy{it.optString("date")+it.optString("time")}.firstOrNull()
+            val pending=items.filter{it.optString("date")>=today()&&it.optString("status")=="pending"}.size
+            val completed=items.count{it.optString("status")=="completed"}
+            summary.addView(label("${items.count{it.optString("date")>=today()&&it.optString("status") in listOf("accepted","pending")}} upcoming · $pending awaiting confirmation · $completed completed",14,muted))
+            if(upcoming!=null)summary.addView(label("Next visit: ${upcoming.optString("date")} · ${upcoming.optString("time")} · ${upcoming.optJSONObject("doctor")?.optString("name")?:"Doctor"}",15,teal,true))
+            else summary.addView(note(if(items.isEmpty())"Start with a doctor you trust." else "You have no upcoming confirmed visits."))
+            summary.addView(action("Find a doctor").apply{setOnClickListener{showHome("doctors")}})
+            summary.addView(action("View appointments").apply{setOnClickListener{showHome("appointments")}})
+            summary.addView(action("Open messages (${conversations.length()})").apply{setOnClickListener{showHome("messages")}})
+            for(i in 0 until minOf(conversations.length(),3)) {
+                val conversation=conversations.getJSONObject(i)
+                summary.addView(label("${conversation.optString("participantName")}: ${conversation.optJSONObject("lastMessage")?.optString("body")?:conversation.optString("lastMessage")}",13,muted))
             }
         }
     }
@@ -936,12 +1242,14 @@ class MainActivity : Activity() {
         orientation = LinearLayout.VERTICAL
         gravity = Gravity.TOP
         setPadding(dp(24), dp(24), dp(24), dp(24))
-        setBackgroundColor(Color.rgb(245, 249, 248))
+        setBackgroundColor(if(darkTheme)Color.rgb(18,31,33) else Color.rgb(245,249,248))
     }
 
     private fun field(hintText: String, inputType: Int = android.text.InputType.TYPE_CLASS_TEXT) = EditText(this).apply {
-        hint = hintText
+        hint = translate(hintText)
         this.inputType = inputType
+        setTextColor(ink)
+        setHintTextColor(muted)
         textSize = 16f
         setSingleLine(inputType != android.text.InputType.TYPE_CLASS_TEXT)
         setPadding(dp(14), dp(12), dp(14), dp(12))
@@ -951,7 +1259,7 @@ class MainActivity : Activity() {
     }
 
     private fun action(title: String) = Button(this).apply {
-        text = title
+        text = translate(title)
         isAllCaps = false
         setTextColor(Color.WHITE)
         setBackgroundColor(teal)
@@ -961,7 +1269,7 @@ class MainActivity : Activity() {
     }
 
     private fun label(text: String, size: Int, color: Int, bold: Boolean = false) = TextView(this).apply {
-        this.text = text
+        this.text = translate(text)
         textSize = size.toFloat()
         setTextColor(color)
         if (bold) setTypeface(typeface, android.graphics.Typeface.BOLD)
@@ -969,17 +1277,17 @@ class MainActivity : Activity() {
     }
 
     private fun note(text: String) = TextView(this).apply {
-        this.text = text
+        this.text = translate(text)
         textSize = 14f
         setTextColor(ink)
         setPadding(dp(14), dp(14), dp(14), dp(14))
-        setBackgroundColor(Color.rgb(232, 243, 241))
+        setBackgroundColor(if(darkTheme)Color.rgb(35,57,58) else Color.rgb(232,243,241))
     }
 
     private fun card() = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         setPadding(dp(14), dp(12), dp(14), dp(12))
-        setBackgroundColor(Color.WHITE)
+        setBackgroundColor(if(darkTheme)Color.rgb(28,43,45) else Color.WHITE)
         val lp = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10); bottomMargin = dp(4) }
         layoutParams = lp
     }
@@ -994,16 +1302,53 @@ class MainActivity : Activity() {
     private fun today(): String = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
         timeZone = java.util.TimeZone.getTimeZone("Asia/Dhaka")
     }.format(Date())
+
+    private fun remoteImage(source:String,size:Int=dp(96)):ImageView {
+        val image=ImageView(this).apply {
+            layoutParams=LinearLayout.LayoutParams(size,size).apply { bottomMargin=dp(8) }
+            scaleType=ImageView.ScaleType.CENTER_CROP
+            setBackgroundColor(if(darkTheme)Color.rgb(35,57,58) else Color.rgb(232,243,241))
+        }
+        val address=if(source.startsWith("/"))"https://carewell-psi.vercel.app$source" else source
+        imageWorker.execute {
+            val bitmap=runCatching { URL(address).openConnection().apply { connectTimeout=8_000;readTimeout=8_000 }.getInputStream().use { BitmapFactory.decodeStream(it) } }.getOrNull()
+            if(bitmap!=null&&!isFinishing)runOnUiThread{image.setImageBitmap(bitmap)}
+        }
+        return image
+    }
+    private fun translate(value: String): String {
+        if (language != "bn") return value
+        val exact = bengali.optString(value, "")
+        if (exact.isNotEmpty()) return exact
+        return value.replace(Regex("\\d")) { match -> "০১২৩৪৫৬৭৮৯"[match.value.toInt()].toString() }
+    }
+
+    private fun applySystemTheme() {
+        window.statusBarColor = teal
+        window.navigationBarColor = teal
+        window.decorView.systemUiVisibility = if(darkTheme) 0 else View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+    }
+
+    private fun confirmAction(title:String,message:String,onConfirm:()->Unit) {
+        AlertDialog.Builder(this)
+            .setTitle(translate(title))
+            .setMessage(translate(message))
+            .setNegativeButton(translate("Cancel"),null)
+            .setPositiveButton(translate("Continue")) { _,_ -> onConfirm() }
+            .show()
+    }
+
+    private val teal: Int get() = if(darkTheme)Color.rgb(87,195,181) else Color.rgb(10,96,91)
+    private val muted: Int get() = if(darkTheme)Color.rgb(176,195,195) else Color.rgb(90,107,108)
+    private val ink: Int get() = if(darkTheme)Color.rgb(232,243,241) else Color.rgb(27,43,45)
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     override fun onDestroy() {
+        stopEvents()
+        eventsWorker.shutdownNow()
+        imageWorker.shutdownNow()
         worker.shutdownNow()
         super.onDestroy()
     }
 
-    companion object {
-        private val teal = Color.rgb(10, 96, 91)
-        private val muted = Color.rgb(90, 107, 108)
-        private val ink = Color.rgb(27, 43, 45)
-    }
 }
