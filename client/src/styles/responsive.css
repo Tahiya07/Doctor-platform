@@ -819,6 +819,28 @@
   .topbar {
     margin: 10px 12px 12px;
     padding: 6px 8px;
+    gap: 7px;
+  }
+  .nav-identity {
+    min-width: 0;
+  }
+  .topbar-brand,
+  .topbar-brand-home,
+  .topbar-brand-copy {
+    min-width: 0;
+  }
+  .topbar-brand {
+    flex: 0 1 auto;
+  }
+  .topbar-brand-home {
+    flex: 0 1 auto;
+  }
+  .topbar-brand small {
+    display: none;
+  }
+  .command-pill,
+  .topbar .mobile-menu {
+    flex: none;
   }
   .topbar-brand {
     gap: 6px;
@@ -850,6 +872,64 @@
   .nav-account .topbar-avatar {
     width: 25px;
     height: 25px;
+  }
+}
+@media (max-width: 420px) {
+  .topbar {
+    gap: 5px;
+    margin-right: 8px;
+    margin-left: 8px;
+    padding-right: 6px;
+    padding-left: 6px;
+  }
+  .nav-identity {
+    flex: 1 1 auto;
+    margin-right: 0;
+  }
+  .topbar-brand {
+    gap: 4px;
+    padding-right: 5px;
+    padding-left: 5px;
+  }
+  .topbar-brand-home {
+    gap: 5px;
+  }
+  .topbar-brand strong {
+    font-size: 14px;
+  }
+  .topbar-brand .brand-mark {
+    width: 25px;
+    height: 25px;
+  }
+  .command-pill {
+    gap: 0;
+    padding: 2px;
+  }
+  .language-switch {
+    gap: 0;
+    padding-right: 7px;
+    padding-left: 7px;
+    font-size: 12px;
+  }
+  .language-switch > svg {
+    display: none;
+  }
+  .command-pill .icon-button {
+    width: 28px;
+    height: 28px;
+  }
+  .account-trigger {
+    width: 36px;
+    height: 30px;
+  }
+  .topbar .mobile-menu {
+    width: 30px;
+    height: 30px;
+  }
+}
+@media (max-width: 360px) {
+  .mobile-quick-nav > a:not(.quick-nav-center) > span:not(.quick-nav-icon) {
+    display: none;
   }
 }
 @media (min-width: 901px) {
