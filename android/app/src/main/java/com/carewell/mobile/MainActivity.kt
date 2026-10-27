@@ -40,7 +40,7 @@ class MainActivity : Activity() {
         showLoading("Connecting to Carewell…")
         runApi({ CarewellApi.get("/auth/me") as JSONObject }) { result ->
             if (result.isSuccess) {
-                user = result.getOrThrow().optJSONObject("user") ?: JSONObject()
+                user = (result.getOrThrow() as JSONObject).optJSONObject("user") ?: JSONObject()
                 showHome("doctors")
             } else {
                 showLogin()
@@ -79,7 +79,7 @@ class MainActivity : Activity() {
             }) { result ->
                 signIn.isEnabled = true
                 if (result.isSuccess) {
-                    user = result.getOrThrow().optJSONObject("user") ?: JSONObject()
+                    user = (result.getOrThrow() as JSONObject).optJSONObject("user") ?: JSONObject()
                     banner = "Signed in successfully."
                     showHome("doctors")
                 } else showLogin(result.exceptionOrNull()?.message ?: "Sign in failed.")
@@ -112,7 +112,7 @@ class MainActivity : Activity() {
             runApi({ CarewellApi.post("/auth/patient/register", request) as JSONObject }) { result ->
                 create.isEnabled = true
                 if (result.isSuccess) {
-                    user = result.getOrThrow().optJSONObject("user") ?: JSONObject()
+                    user = (result.getOrThrow() as JSONObject).optJSONObject("user") ?: JSONObject()
                     showVerification("A 6-digit code was sent to ${user.optString("email") }.")
                 } else showRegistration(result.exceptionOrNull()?.message ?: "Could not create the account.")
             }
@@ -133,7 +133,7 @@ class MainActivity : Activity() {
             runApi({ CarewellApi.post("/auth/verify-email", JSONObject().put("code", code.text.toString().trim())) as JSONObject }) { result ->
                 verify.isEnabled = true
                 if (result.isSuccess) {
-                    user = result.getOrThrow().optJSONObject("user") ?: user
+                    user = (result.getOrThrow() as JSONObject).optJSONObject("user") ?: user
                     banner = "Email verified. You can now request appointments."
                     showHome("doctors")
                 } else showVerification(result.exceptionOrNull()?.message ?: "Could not verify email.")
@@ -208,7 +208,7 @@ class MainActivity : Activity() {
                     results.addView(note(response.exceptionOrNull()?.message ?: "Could not load doctors."))
                     return@runApi
                 }
-                doctors = response.getOrThrow()
+                doctors = response.getOrThrow() as JSONArray
                 if (doctors.length() == 0) results.addView(label("No doctors matched. Try another search.", 15, muted))
                 for (i in 0 until doctors.length()) {
                     val doctor = doctors.getJSONObject(i)
@@ -246,7 +246,7 @@ class MainActivity : Activity() {
                 places.addView(note(result.exceptionOrNull()?.message ?: "Could not load clinics."))
                 return@runApi
             }
-            clinics = result.getOrThrow()
+            clinics = result.getOrThrow() as JSONArray
             val ids = doctor.optJSONArray("facilityIds") ?: JSONArray()
             for (i in 0 until clinics.length()) {
                 val clinic = clinics.getJSONObject(i)
@@ -282,7 +282,7 @@ class MainActivity : Activity() {
                     slotsView.addView(note(result.exceptionOrNull()?.message ?: "Could not load times."))
                     return@runApi
                 }
-                val slots = result.getOrThrow()
+                val slots = result.getOrThrow() as JSONArray
                 for (i in 0 until slots.length()) {
                     val slot = slots.getJSONObject(i)
                     if (slot.optString("status") != "available") continue
@@ -338,7 +338,7 @@ class MainActivity : Activity() {
                 content.addView(note(result.exceptionOrNull()?.message ?: "Could not load appointments."))
                 return@runApi
             }
-            val visits = result.getOrThrow()
+            val visits = result.getOrThrow() as JSONArray
             if (visits.length() == 0) content.addView(note("No appointment requests yet. Find a doctor to get started."))
             for (i in 0 until visits.length()) {
                 val visit = visits.getJSONObject(i)
