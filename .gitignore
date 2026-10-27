@@ -20,3 +20,6 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 .neon
+
+# Generated copy of the client production bundle packaged into Android
+android/app/src/main/assets/web/
