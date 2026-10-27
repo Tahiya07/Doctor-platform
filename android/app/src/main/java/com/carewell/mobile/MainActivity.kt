@@ -1216,7 +1216,9 @@ class MainActivity : Activity() {
         }) { result ->
             if(result.isFailure){summary.addView(note(result.exceptionOrNull()?.message?:"Your care summary is unavailable."));return@runApi}
             @Suppress("UNCHECKED_CAST")
-            val (visits,conversations)=result.getOrThrow() as Pair<JSONArray,JSONArray>
+            val responsePair = result.getOrThrow() as Pair<JSONArray,JSONArray>
+            val visits = responsePair.first
+            val conversations = responsePair.second
             val items=(0 until visits.length()).map{visits.getJSONObject(it)}
             val upcoming=items.filter{it.optString("date")>=today()&&it.optString("status")=="accepted"}.sortedBy{it.optString("date")+it.optString("time")}.firstOrNull()
             val pending=items.filter{it.optString("date")>=today()&&it.optString("status")=="pending"}.size
