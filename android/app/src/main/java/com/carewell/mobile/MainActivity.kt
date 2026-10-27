@@ -880,7 +880,25 @@ class MainActivity : Activity() {
         if (!user.optBoolean("emailVerified", false))
             content.addView(action("Verify email").apply { setOnClickListener { showVerification() } })
         val oldPassword=field("Current password",android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);val newPassword=field("New password",android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);content.addView(oldPassword);content.addView(newPassword)
-        content.addView(action("Change password").apply{setOnClickListener{runApi({CarewellApi.post("/auth/change-password",JSONObject().put("currentPassword",oldPassword.text.toString()).put("newPassword",newPassword.text.toString()))}){content.addView(note(if(it.isSuccess)"Password changed. Other sessions were signed out." else it.exceptionOrNull()?.message?:"Could not change password."))}}})
+        content.addView(action("Change password").apply {
+            setOnClickListener {
+                runApi({
+                    CarewellApi.post(
+                        "/auth/change-password",
+                        JSONObject()
+                            .put("currentPassword", oldPassword.text.toString())
+                            .put("newPassword", newPassword.text.toString())
+                    )
+                }) { result ->
+                    content.addView(
+                        note(
+                            if (result.isSuccess) "Password changed. Other sessions were signed out."
+                            else result.exceptionOrNull()?.message ?: "Could not change password."
+                        )
+                    )
+                }
+            }
+        })
         val logout = action("Sign out")
         content.addView(logout)
         logout.setOnClickListener {
